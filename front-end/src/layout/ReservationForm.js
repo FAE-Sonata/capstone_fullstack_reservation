@@ -15,14 +15,15 @@ function ReservationForm() {
   const DEFAULT_YEAR = parseInt(DEFAULT_DATE.substr(0, NUM_DIGITS_YR));
   const DEFAULT_MONTH = parseInt(DEFAULT_DATE.substr(NUM_DIGITS_YR+1, 2));
   const DEFAULT_DAY = parseInt(DEFAULT_DATE.substr(NUM_DIGITS_YR+4, 2));
+  const RANGE_TIMES = ["10:30", "21:30"];
   // const MAX_DATES = [31, undefined, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
   const initialFormState = {
     first_name: "", last_name: "",
     mobile_number: "(123) 456-7289", // validate
     // reservation_date: today(),
-    hour: "12",
-    minute: "00",
+    // hour: "12",
+    // minute: "00",
     people: 1,
     errors: {},
   };
@@ -31,8 +32,13 @@ function ReservationForm() {
     month: DEFAULT_MONTH,
     day: DEFAULT_DAY,
   }
+  const initialTimeFields = {
+    hour: "12",
+    minute: "00",
+  }
   const [formData, setFormData] = useState({ ...initialFormState });
   const [dateFields, setDateFields] = useState({...initialDateFields});
+  const [timeFields, setTimeFields] = useState({...initialTimeFields});
   const handleChange = ({ target }) => {
     setFormData({
       ...formData,
@@ -54,9 +60,7 @@ function ReservationForm() {
     const CURRENT_DATE_OBJ = new Date(CURRENT_TIME.getFullYear(),
       CURRENT_TIME.getMonth(),
       CURRENT_TIME.getDate());
-    // const CURRENT_YEAR = CURRENT_DATE_OBJ.getFullYear();
-    // const CURRENT_MONTH = CURRENT_DATE_OBJ.getMonth() + 1;
-    // const CURRENT_DAY = CURRENT_DATE_OBJ.getDate();
+    
     const setDateErrors = (type, message) => {
       dateErrors[type] = message;
       setFormData({
@@ -102,6 +106,65 @@ function ReservationForm() {
     }
     setDateFields({
       ...dateFields,
+      [field]: target.value,
+    });
+  };
+
+  const handleTime = ({ target }) => {
+    setFormData({
+      ...formData,
+      'errors': {}
+    });
+    const timeErrors = {};
+    const field = target.name;
+    const input = parseInt(target.value);
+
+    const CURRENT_TIME = new Date();
+    const CURRENT_YEAR = CURRENT_TIME.getFullYear();
+    const CURRENT_MONTH = CURRENT_TIME.getMonth();
+    const CURRENT_DAY = CURRENT_TIME.getDate();
+    const setTimeErrors = (type, message) => {
+      timeErrors[type] = message;
+      setFormData({
+        ...formData,
+        'errors': timeErrors
+      });
+    }
+    let builtTime = undefined;
+    const hourForm = parseInt(timeFields['hour']);
+    const minuteForm = parseInt(timeFields['minute']);
+    switch(field) {
+      case "hour":
+        builtTime = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
+          input, minuteForm);
+        break;
+      case "minute":
+        builtTime = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
+          hourForm, input);
+        break;
+      default:
+        setTimeErrors('invalid_field', "Invalid field");
+        return;
+    }
+    if(builtTime <= CURRENT_TIME) {
+      setTimeErrors('time',
+        "Invalid time: Reservation start time must be in the future");
+      return;
+    }
+    const EARLIEST_SPLIT = RANGE_TIMES[0].split(":").map(x => parseInt(x));
+    const LATEST_SPLIT = RANGE_TIMES[1].split(":").map(x => parseInt(x));
+    const EARLIEST_TIME = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
+      EARLIEST_SPLIT[0], EARLIEST_SPLIT[1]);
+    const LATEST_TIME = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
+      LATEST_SPLIT[0], LATEST_SPLIT[1]);
+    if(builtTime < EARLIEST_TIME || builtTime > LATEST_TIME) {
+      // console.log(`ATTEMPTED DATE set: ${builtTime}`);
+      setTimeErrors('time',
+        `Invalid time: Reservation start time must be between ${RANGE_TIMES[0]} and ${RANGE_TIMES[1]}, inclusive.`);
+      return;
+    }
+    setTimeFields({
+      ...timeFields,
       [field]: target.value,
     });
   };
@@ -269,8 +332,8 @@ function ReservationForm() {
           name="hour"
           min="10"
           max="21"
-          onChange={handleChange}
-          value={formData['hour']}
+          onChange={handleTime}
+          value={timeFields['hour']}
         />
       </label>
       <br />
@@ -282,9 +345,13 @@ function ReservationForm() {
           name="minute"
           min="0"
           max="59"
-          onChange={handleChange}
-          value={formData['minute']}
+          onChange={handleTime}
+          value={timeFields['minute']}
         />
+        <div className="alert alert-danger" hidden={!('time' in
+          formData['errors'])}>
+            {formData['errors']['time']}
+        </div>
       </label>
       <br />
       <label htmlFor="people">
