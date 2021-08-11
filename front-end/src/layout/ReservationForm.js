@@ -156,13 +156,22 @@ function ReservationForm() {
     headers.append("Content-Type", "application/json");
 
     console.log("SUBMIT: PRE-FETCH");
-    fetch('http://localhost:5000/reservations/new', {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(submitForm),
-    })
-      .then((res) => res.json())
-      .catch((err) => console.log(`ERROR: ${err}`));
+    const abortController = new AbortController();
+    try {
+      fetch('http://localhost:5000/reservations/new', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(submitForm),
+        signal: abortController.signal,
+      })//.then((res) => res.json());
+    }
+    catch(error) {
+      // console.log(`${error['name']}; ${error['message']}`);
+      // if (error['name'] === "AbortError") console.log("Aborted");
+      // else throw error;
+      console.log("ERROR: " + error);
+    }
+      // .catch((err) => console.log(`ERROR: ${err}`));
     history.goBack();
   };
 
