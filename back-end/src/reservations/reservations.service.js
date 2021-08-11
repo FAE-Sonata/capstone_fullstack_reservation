@@ -9,6 +9,7 @@ function listByDate(selectedDate) {
 }
 
 function create(reservation) {
+    // suggestion: if "reservation" is empty, throw Error
     return knex("reservations")
         .insert(reservation)
         .returning("*")

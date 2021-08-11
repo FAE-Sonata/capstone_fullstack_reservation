@@ -3,9 +3,9 @@ const hasProperties = require("../errors/hasProperties");
 const reservationsService = require("./reservations.service");
 const VALID_PROPERTIES = ["first_name", "last_name", "mobile_number",
   "reservation_date", "reservation_time", "people"];
-const hasRequired = hasProperties(VALID_PROPERTIES[0], VALID_PROPERTIES[1],
+const hasRequired = hasProperties(...VALID_PROPERTIES); /*[0], VALID_PROPERTIES[1],
   VALID_PROPERTIES[2], VALID_PROPERTIES[3], VALID_PROPERTIES[4],
-  VALID_PROPERTIES[5]);
+  VALID_PROPERTIES[5]);*/
 
 async function hasOnlyValidProperties(req, res, next) {
   const { data = {} } = req.body;
@@ -35,7 +35,7 @@ async function list(req, res) {
 
 async function create(req, res, next) {
   reservationsService
-    .create(req.body['data'])
+    .create(req.body)
     .then((data) => res.status(201).json({ data }))
     .catch(next);
 }

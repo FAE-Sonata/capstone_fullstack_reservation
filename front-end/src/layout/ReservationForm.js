@@ -40,7 +40,6 @@ function ReservationForm() {
     });
   };
 
-  // TODO: CHANGE TO VALIDATION OF SUBMISSION
   const handleDate = ({ target }) => {
     // moment()
     setFormData({
@@ -132,8 +131,39 @@ function ReservationForm() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log("Submitted:", formData);
-    setFormData({ ...initialFormState });
+    const {errors, ...mid} = formData;
+    // console.log(`TYPEOF month and day: ${typeof(dateFields['month'])}; ${typeof(dateFields['day'])}`);
+    const strMonth = String(dateFields['month']);
+    const strDay = String(dateFields['day']);
+    const ymd = [`${dateFields['year']}`,
+      `${strMonth.padStart(2, "0")}`,
+      `${strDay.padStart(2, "0")}`].join("-");
+    const hms = [`${mid['hour'].padStart(2, "0")}`,
+      `${mid['minute'].padStart(2, "0")}`, "00"].join(":");
+    // delete submitForm['errors'];
+    const teleRe = new RegExp(/[\-()\s]/g);
+    const rawTele = mid['mobile_number'].replaceAll(teleRe, "");
+    mid['mobile_number'] = [rawTele.substr(0,3),
+      rawTele.substr(3,3),
+      rawTele.substr(6,4)].join("-");
+    mid['reservation_date'] = ymd;
+    mid['reservation_time'] = hms;
+    const {hour, minute, ...submitForm} = mid;
+    // console.log("Submitted:", submitForm);
+    // setFormData({ ...initialFormState });
+
+    const headers = new Headers();
+    headers.append("Content-Type", "application/json");
+
+    console.log("SUBMIT: PRE-FETCH");
+    fetch('http://localhost:5000/reservations/new', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(submitForm),
+    })
+      .then((res) => res.json())
+      .catch((err) => console.log(`ERROR: ${err}`));
+    history.goBack();
   };
 
   return (
@@ -260,7 +290,8 @@ function ReservationForm() {
         />
       </label>
       <br/>
-      <button type="submit">Submit</button>
+      <button type="submit" disabled={!(formData['first_name'].length &&
+        formData['last_name'].length)}>Submit</button>
       <button onClick={() => history.goBack()}>Cancel</button>
     </form>
   );
