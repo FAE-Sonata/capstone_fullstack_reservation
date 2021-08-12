@@ -7,6 +7,7 @@ import { today, next } from "../utils/date-time";
 // }
 
 function ReservationForm() {
+  // const { url } = useRouteMatch();
   const history = useHistory();
   const DATE_OBJ = new Date();
   let DEFAULT_DATE = today();
@@ -39,12 +40,46 @@ function ReservationForm() {
   const [formData, setFormData] = useState({ ...initialFormState });
   const [dateFields, setDateFields] = useState({...initialDateFields});
   const [timeFields, setTimeFields] = useState({...initialTimeFields});
+
+  const setTimeErrors = (type, message) => {
+    let timeErrors = {};
+    timeErrors[type] = message;
+    setFormData({
+      ...formData,
+      'errors': timeErrors
+    });
+  }
   const handleChange = ({ target }) => {
     setFormData({
       ...formData,
       [target.name]: target.value,
     });
   };
+
+  function isValidTime(currentDate, timeObj) {
+    console.log("VALIDATING TIME: ", currentDate);
+    const CURRENT_YEAR = currentDate.getFullYear();
+    const CURRENT_MONTH = currentDate.getMonth();
+    const CURRENT_DAY = currentDate.getDate();
+
+    if(timeObj <= currentDate) {
+      setTimeErrors('time',
+        "Invalid time: Reservation start time must be in the future");
+      return false;
+    }
+    const EARLIEST_SPLIT = RANGE_TIMES[0].split(":").map(x => parseInt(x));
+    const LATEST_SPLIT = RANGE_TIMES[1].split(":").map(x => parseInt(x));
+    const EARLIEST_TIME = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
+      EARLIEST_SPLIT[0], EARLIEST_SPLIT[1]);
+    const LATEST_TIME = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
+      LATEST_SPLIT[0], LATEST_SPLIT[1]);
+    if(timeObj < EARLIEST_TIME || timeObj > LATEST_TIME) {
+      setTimeErrors('time',
+        `Invalid time: Reservation start time must be between ${RANGE_TIMES[0]} and ${RANGE_TIMES[1]}, inclusive.`);
+      return false;
+    }
+    return true;
+  }
 
   const handleDate = ({ target }) => {
     // moment()
@@ -115,7 +150,7 @@ function ReservationForm() {
       ...formData,
       'errors': {}
     });
-    const timeErrors = {};
+    // const timeErrors = {};
     const field = target.name;
     const input = parseInt(target.value);
 
@@ -123,13 +158,7 @@ function ReservationForm() {
     const CURRENT_YEAR = CURRENT_TIME.getFullYear();
     const CURRENT_MONTH = CURRENT_TIME.getMonth();
     const CURRENT_DAY = CURRENT_TIME.getDate();
-    const setTimeErrors = (type, message) => {
-      timeErrors[type] = message;
-      setFormData({
-        ...formData,
-        'errors': timeErrors
-      });
-    }
+    
     let builtTime = undefined;
     const hourForm = parseInt(timeFields['hour']);
     const minuteForm = parseInt(timeFields['minute']);
@@ -146,23 +175,8 @@ function ReservationForm() {
         setTimeErrors('invalid_field', "Invalid field");
         return;
     }
-    if(builtTime <= CURRENT_TIME) {
-      setTimeErrors('time',
-        "Invalid time: Reservation start time must be in the future");
-      return;
-    }
-    const EARLIEST_SPLIT = RANGE_TIMES[0].split(":").map(x => parseInt(x));
-    const LATEST_SPLIT = RANGE_TIMES[1].split(":").map(x => parseInt(x));
-    const EARLIEST_TIME = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
-      EARLIEST_SPLIT[0], EARLIEST_SPLIT[1]);
-    const LATEST_TIME = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
-      LATEST_SPLIT[0], LATEST_SPLIT[1]);
-    if(builtTime < EARLIEST_TIME || builtTime > LATEST_TIME) {
-      // console.log(`ATTEMPTED DATE set: ${builtTime}`);
-      setTimeErrors('time',
-        `Invalid time: Reservation start time must be between ${RANGE_TIMES[0]} and ${RANGE_TIMES[1]}, inclusive.`);
-      return;
-    }
+    if(!isValidTime(CURRENT_TIME, builtTime)) return;
+    
     setTimeFields({
       ...timeFields,
       [field]: target.value,
@@ -192,8 +206,24 @@ function ReservationForm() {
     }
   };
 
+  // TODO: prevent submission of invalid time
   const handleSubmit = (event) => {
     event.preventDefault();
+    console.log("ENTERING SUBMIT, PRE-VALIDATION");
+    /* check time at beginning since default time of form is 12:00, and
+    check during onChange={} will not be done
+    */
+    const CURRENT_TIME = new Date();
+    const FORM_TIME = new Date(parseInt(dateFields['year']),
+      parseInt(dateFields['month'])-1,
+      parseInt(dateFields['day']),
+      parseInt(timeFields['hour'],
+      parseInt(timeFields['minute'])));
+    console.log("VALIDATING SUBMISSION TIME, CURRENT =", CURRENT_TIME.getFullYear());
+    if(!isValidTime(CURRENT_TIME, FORM_TIME)) {
+      return;
+    }
+
     const {errors, ...mid} = formData;
     // console.log(`TYPEOF month and day: ${typeof(dateFields['month'])}; ${typeof(dateFields['day'])}`);
     const strMonth = String(dateFields['month']);
@@ -201,8 +231,8 @@ function ReservationForm() {
     const ymd = [`${dateFields['year']}`,
       `${strMonth.padStart(2, "0")}`,
       `${strDay.padStart(2, "0")}`].join("-");
-    const hms = [`${mid['hour'].padStart(2, "0")}`,
-      `${mid['minute'].padStart(2, "0")}`, "00"].join(":");
+    const hms = [`${timeFields['hour'].padStart(2, "0")}`,
+      `${timeFields['minute'].padStart(2, "0")}`, "00"].join(":");
     // delete submitForm['errors'];
     const teleRe = new RegExp(/[\-()\s]/g);
     const rawTele = mid['mobile_number'].replaceAll(teleRe, "");
@@ -235,7 +265,7 @@ function ReservationForm() {
       console.log("ERROR: " + error);
     }
       // .catch((err) => console.log(`ERROR: ${err}`));
-    history.goBack();
+    history.push("../../");
   };
 
   return (

@@ -4,6 +4,7 @@ import { Redirect, Route, Switch } from "react-router-dom";
 import Dashboard from "../dashboard/Dashboard";
 import NotFound from "./NotFound";
 import { today } from "../utils/date-time";
+import useQuery from "../utils/useQuery";
 import ReservationForm from "./ReservationForm";
 
 /**
@@ -14,6 +15,10 @@ import ReservationForm from "./ReservationForm";
  * @returns {JSX.Element}
  */
 function Routes() {
+  // with permission from mentor Marius Banea: https://github.com/itsdotnickscott/periodic-tables/blob/main/front-end/src/layout/Routes.js
+  const query = useQuery();
+  const queryDate = query.get("date");
+  const suppliedDate = (queryDate) ? queryDate : (today());
   return (
     <Switch>
       <Route exact={true} path="/reservations/new">
@@ -27,7 +32,7 @@ function Routes() {
         <Redirect to={"/dashboard"} />
       </Route>
       <Route path="/dashboard">
-        <Dashboard date={today()} />
+        <Dashboard date={suppliedDate} />
       </Route>
       <Route>
         <NotFound />
