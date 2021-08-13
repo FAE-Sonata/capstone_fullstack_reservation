@@ -273,28 +273,24 @@ function ReservationForm() {
     }
   };
 
-  // TODO: prevent submission of invalid time
   const handleSubmit = (event) => {
     event.preventDefault();
     setFormData({
       ...formData,
       'errors': {}
     });
-    /* check time at beginning since default time of form is 12:00, and
-    check during onChange={} will not be done
-    */
-    const CURRENT_TIME = new Date();
-    const FORM_TIME = new Date(parseInt(dateFields['year']),
-      parseInt(dateFields['month'])-1,
-      parseInt(dateFields['day']),
-      parseInt(timeFields['hour'],
-      parseInt(timeFields['minute'])));
-    // const FORM_DATE_MIDNIGHT = new Date(parseInt(dateFields['year']),
+    // /* check time at beginning since default time of form is 12:00, and
+    // check during onChange={} will not be done
+    // */
+    // const CURRENT_TIME = new Date();
+    // const FORM_TIME = new Date(parseInt(dateFields['year']),
     //   parseInt(dateFields['month'])-1,
-    //   parseInt(dateFields['day']));
-    if(!isValidTime(CURRENT_TIME, FORM_TIME)) {
-      return;
-    }
+    //   parseInt(dateFields['day']),
+    //   parseInt(timeFields['hour'],
+    //   parseInt(timeFields['minute'])));
+    // if(!isValidTime(CURRENT_TIME, FORM_TIME)) {
+    //   return;
+    // }
 
     const {errors, ...mid} = formData;
     const strMonth = String(dateFields['month']);
@@ -365,7 +361,7 @@ function ReservationForm() {
       console.log("POST FETCH formData has errors");
       return;
     }
-    history.push("../../");
+    history.push(`../../dashboard?date=${ymd}`);
   };
 
   return (
