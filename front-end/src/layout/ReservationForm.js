@@ -2,22 +2,98 @@
 import React, { useState } from "react";
 import { useHistory } from "react-router";
 import { today, next } from "../utils/date-time";
-// function isLeap(yr) {
-//   return 28 + ((yr % 400 === 0 || ((yr % 100) && (yr % 4 === 0))));
-// }
+const RANGE_TIMES = ["10:30", "21:30"];
+
+/**
+ * 
+ * @param {Number} x 
+ * @returns "0X" if "X" is a single digit
+ */
+function padInt(x) {
+  return x.toString().padStart(2, "0");
+}
+
+/**
+ * 
+ * @returns hour (in 24-hour format) of restaurant's opening time
+ */
+function earliestHour() {
+  const EARLIEST_SPLIT = RANGE_TIMES[0].split(":").map(x => parseInt(x));
+  return EARLIEST_SPLIT[0];
+}
+
+/**
+ * 
+ * @returns hour (in 24-hour format) of restaurant's closing time
+ */
+function latestHour() {
+  const LATEST_SPLIT = RANGE_TIMES[1].split(":").map(x => parseInt(x));
+  return LATEST_SPLIT[0];
+}
+
+/**
+ * 
+ * @param {Date} someDate 
+ * @returns restaurant's opening time on the specified date
+ */
+function getOpenOn(someDate) {
+  const year = someDate.getFullYear();
+  const month = someDate.getMonth();
+  const day = someDate.getDate();
+  const EARLIEST_SPLIT = RANGE_TIMES[0].split(":").map(x => parseInt(x));
+  const EARLIEST_TIME = new Date(year, month, day,
+    EARLIEST_SPLIT[0], EARLIEST_SPLIT[1]);
+  return EARLIEST_TIME;
+}
+
+/**
+ * 
+ * @param {Date} someDate 
+ * @returns restaurant's closing time (earlier than midnight) on the specified date
+ */
+ function getCloseOn(someDate) {
+  const year = someDate.getFullYear();
+  const month = someDate.getMonth();
+  const day = someDate.getDate();
+  const LATEST_SPLIT = RANGE_TIMES[1].split(":").map(x => parseInt(x));
+  const LATEST_TIME = new Date(year, month, day,
+    LATEST_SPLIT[0], LATEST_SPLIT[1]);
+  return LATEST_TIME;
+}
+
+/**
+ * 
+ * @returns default time to initially populate the form; either 
+ * 1) the opening time of the next day if A) the current date is a Tuesday 
+ * or B) the current time is after the closing time
+ * 2) the top of the next full hour in the restaurant's operating window
+ * 3) the closing time (not a top of the hour, e.g. 23:00) if in the last
+ * truncated hour of the restaurant's operating window
+ */
+function getFirstTopHour() {
+  const CURRENT_TIME = new Date();
+  if(CURRENT_TIME.getDay() === 2 || CURRENT_TIME > getCloseOn(CURRENT_TIME))
+    return getOpenOn(next(today()));
+  else {
+    const openToday = getOpenOn(CURRENT_TIME);
+    if(CURRENT_TIME < openToday) return openToday;
+    const CURRENT_HOUR = CURRENT_TIME.getHours();
+    if(CURRENT_HOUR < latestHour()) {
+      const topNextHour = new Date(CURRENT_TIME.getFullYear(),
+        CURRENT_TIME.getMonth(),
+        CURRENT_TIME.getDate(),
+        CURRENT_HOUR + 1,
+        0);
+      return topNextHour;
+    }
+    return getCloseOn(CURRENT_TIME);
+  }
+}
 
 function ReservationForm() {
-  // const { url } = useRouteMatch();
   const history = useHistory();
-  const DATE_OBJ = new Date();
-  let DEFAULT_DATE = today();
-  if(DATE_OBJ.getDay() === 2) DEFAULT_DATE = next(today());
-  const NUM_DIGITS_YR = DEFAULT_DATE.indexOf("-");
-  const DEFAULT_YEAR = parseInt(DEFAULT_DATE.substr(0, NUM_DIGITS_YR));
-  const DEFAULT_MONTH = parseInt(DEFAULT_DATE.substr(NUM_DIGITS_YR+1, 2));
-  const DEFAULT_DAY = parseInt(DEFAULT_DATE.substr(NUM_DIGITS_YR+4, 2));
-  const RANGE_TIMES = ["10:30", "21:30"];
-  // const MAX_DATES = [31, undefined, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  let DEFAULT_FORM_TIME = getFirstTopHour();
+  const DEFAULT_YEAR = DEFAULT_FORM_TIME.getFullYear();
 
   const initialFormState = {
     first_name: "", last_name: "",
@@ -28,12 +104,12 @@ function ReservationForm() {
   };
   const initialDateFields = {
     year: DEFAULT_YEAR,
-    month: DEFAULT_MONTH,
-    day: DEFAULT_DAY,
+    month: DEFAULT_FORM_TIME.getMonth() + 1,
+    day: DEFAULT_FORM_TIME.getDate(),
   }
   const initialTimeFields = {
-    hour: "12",
-    minute: "00",
+    hour: padInt(DEFAULT_FORM_TIME.getHours()),
+    minute: padInt(DEFAULT_FORM_TIME.getMinutes()),
   }
   const [formData, setFormData] = useState({ ...initialFormState });
   const [dateFields, setDateFields] = useState({...initialDateFields});
@@ -55,26 +131,19 @@ function ReservationForm() {
   };
 
   function isValidTime(currentTime, formTime) {
-    const FORM_YEAR = formTime.getFullYear();
-    const FORM_MONTH = formTime.getMonth();
-    const FORM_DAY = formTime.getDate();
-
     if(formTime <= currentTime) {
       setTimeErrors('time',
         "Invalid time: Reservation start time must be in the future");
       return false;
     }
-    const EARLIEST_SPLIT = RANGE_TIMES[0].split(":").map(x => parseInt(x));
-    const LATEST_SPLIT = RANGE_TIMES[1].split(":").map(x => parseInt(x));
-    const EARLIEST_TIME = new Date(FORM_YEAR, FORM_MONTH, FORM_DAY,
-      EARLIEST_SPLIT[0], EARLIEST_SPLIT[1]);
-    const LATEST_TIME = new Date(FORM_YEAR, FORM_MONTH, FORM_DAY,
-      LATEST_SPLIT[0], LATEST_SPLIT[1]);
+    const EARLIEST_TIME = getOpenOn(formTime);
+    const LATEST_TIME = getCloseOn(formTime);
     if(formTime < EARLIEST_TIME || formTime > LATEST_TIME) {
       console.log("TIME RANGE: ", EARLIEST_TIME, "; ", LATEST_TIME);
       console.log("ATTEMPTED TIME: ", formTime);
       setTimeErrors('time',
-        `Invalid time: Reservation start time must be between ${RANGE_TIMES[0]} and ${RANGE_TIMES[1]}, inclusive.`);
+        "Invalid time: Reservation start time must be between ",
+        RANGE_TIMES[0], " and ", RANGE_TIMES[1], ", inclusive.");
       return false;
     }
     return true;
@@ -207,6 +276,10 @@ function ReservationForm() {
   // TODO: prevent submission of invalid time
   const handleSubmit = (event) => {
     event.preventDefault();
+    setFormData({
+      ...formData,
+      'errors': {}
+    });
     /* check time at beginning since default time of form is 12:00, and
     check during onChange={} will not be done
     */
@@ -253,44 +326,45 @@ function ReservationForm() {
 
     const abortController = new AbortController();
     // try {
-      console.log("TRY bad FETCH");
-      fetch('http://localhost:5000/reservations/new', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(submitForm),
-        signal: abortController.signal,
-      })
-        .then((res) => res.json())
-        .catch((error) => {
-          console.log("SUBMIT CAUGHT ERROR");
-          let serverError = {};
-          serverError['server'] = `SERVER ERROR: ${error['name']} -- ${error['message']}`;
-          setFormData({
-            ...formData,
-            'errors': serverError,
-          });
-          return;
-        } )
-        ;
-      // fetch("something");
-      console.log("TRY post-FETCH");
-    // }
-    // catch(error) {
-    //   // TODO: ask during OH
-    //   console.log("SUBMIT CAUGHT ERROR");
-    //   let serverError = {};
-    //   serverError['server'] = `SERVER ERROR: ${error['name']} -- ${error['message']}`;
-    //   setFormData({
-    //     ...formData,
-    //     'errors': serverError,
-    //   });
-    //   return;
-    //   // setFormData({..., errors})
-    //   // console.log(`${error['name']}; ${error['message']}`);
-    //   // if (error['name'] === "AbortError") console.log("Aborted");
-    //   // else throw error;
-    //   // console.log("ERROR: " + error);
-    // }
+    // console.log("TRY bad FETCH");
+    fetch('http://localhost:5000/reservations/new', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(submitForm),
+      signal: abortController.signal,
+    })
+      .then((res) => {
+        if(res.status === 500) {
+          return res.json()
+            .then((json) => {
+              console.log("SUBMIT status 500 THEN");
+              // console.log("OLD formData errors: ", formData['errors']);
+              const { error } = json;
+              console.log("RESULTANT JSON: ", json);
+              let serverError = {};
+              serverError['server'] = error; // `SERVER ERROR: ${error['name']} -- ${error['message']}`;
+              console.log("SET serverError: ", serverError);
+              setFormData({
+                ...formData,
+                'errors': serverError,
+              });
+              console.log("NEW formData errors: ", formData['errors']);
+              // console.log("result: ", json);
+              // console.log("message: ", message);
+              // console.log("stack trace: ", stackTrace);
+            });
+            // .catch((error) => {
+            //   console.log("CAUGHT ERROR");              
+              // return;
+            // })
+          }
+          else return res.json();
+        });
+    // console.log("ERRORS number of keys: ", Object.keys(formData['errors']).length);
+    if(Object.keys(formData['errors']).length > 0){ 
+      console.log("POST FETCH formData has errors");
+      return;
+    }
     history.push("../../");
   };
 
@@ -386,8 +460,8 @@ function ReservationForm() {
           id="hour"
           type="number"
           name="hour"
-          min="10"
-          max="21"
+          min={padInt(earliestHour())}
+          max={latestHour()}
           onChange={handleTime}
           value={timeFields['hour']}
         />
@@ -426,9 +500,9 @@ function ReservationForm() {
         </div>
       </label>
       <br/>
-      {/* <button type="submit" disabled={!(formData['first_name'].length &&
-        formData['last_name'].length)}>Submit</button> */}
-      <button type="submit">Submit</button>
+      <button type="submit" disabled={!(formData['first_name'].length &&
+        formData['last_name'].length)}>Submit</button>
+      {/* <button type="submit">Submit</button> */}
       <button onClick={() => history.goBack()}>Cancel</button>
     </form>
   );
