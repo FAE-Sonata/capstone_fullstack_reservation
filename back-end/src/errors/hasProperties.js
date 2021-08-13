@@ -14,7 +14,7 @@ function hasProperties(...properties) {
         const value = data[property];
         if (!value) {
           const error = new Error(`A '${property}' property is required.`);
-          error.status = 400;
+          error.status = 500;
           throw error;
         }
       });

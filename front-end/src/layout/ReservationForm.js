@@ -23,8 +23,6 @@ function ReservationForm() {
     first_name: "", last_name: "",
     mobile_number: "(123) 456-7289", // validate
     // reservation_date: today(),
-    // hour: "12",
-    // minute: "00",
     people: 1,
     errors: {},
   };
@@ -56,24 +54,25 @@ function ReservationForm() {
     });
   };
 
-  function isValidTime(currentDate, timeObj) {
-    console.log("VALIDATING TIME: ", currentDate);
-    const CURRENT_YEAR = currentDate.getFullYear();
-    const CURRENT_MONTH = currentDate.getMonth();
-    const CURRENT_DAY = currentDate.getDate();
+  function isValidTime(currentTime, formTime) {
+    const FORM_YEAR = formTime.getFullYear();
+    const FORM_MONTH = formTime.getMonth();
+    const FORM_DAY = formTime.getDate();
 
-    if(timeObj <= currentDate) {
+    if(formTime <= currentTime) {
       setTimeErrors('time',
         "Invalid time: Reservation start time must be in the future");
       return false;
     }
     const EARLIEST_SPLIT = RANGE_TIMES[0].split(":").map(x => parseInt(x));
     const LATEST_SPLIT = RANGE_TIMES[1].split(":").map(x => parseInt(x));
-    const EARLIEST_TIME = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
+    const EARLIEST_TIME = new Date(FORM_YEAR, FORM_MONTH, FORM_DAY,
       EARLIEST_SPLIT[0], EARLIEST_SPLIT[1]);
-    const LATEST_TIME = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
+    const LATEST_TIME = new Date(FORM_YEAR, FORM_MONTH, FORM_DAY,
       LATEST_SPLIT[0], LATEST_SPLIT[1]);
-    if(timeObj < EARLIEST_TIME || timeObj > LATEST_TIME) {
+    if(formTime < EARLIEST_TIME || formTime > LATEST_TIME) {
+      console.log("TIME RANGE: ", EARLIEST_TIME, "; ", LATEST_TIME);
+      console.log("ATTEMPTED TIME: ", formTime);
       setTimeErrors('time',
         `Invalid time: Reservation start time must be between ${RANGE_TIMES[0]} and ${RANGE_TIMES[1]}, inclusive.`);
       return false;
@@ -130,7 +129,6 @@ function ReservationForm() {
           return;
         }
     if(builtDateObj < CURRENT_DATE_OBJ) {
-      console.log(`ATTEMPTED DATE set: ${builtDateObj}`);
       setDateErrors('date',
         "Invalid date: Reservation must be on or after today");
       return;
@@ -155,20 +153,20 @@ function ReservationForm() {
     const input = parseInt(target.value);
 
     const CURRENT_TIME = new Date();
-    const CURRENT_YEAR = CURRENT_TIME.getFullYear();
-    const CURRENT_MONTH = CURRENT_TIME.getMonth();
-    const CURRENT_DAY = CURRENT_TIME.getDate();
+    const FORM_YEAR = dateFields['year'];  //CURRENT_TIME.getFullYear();
+    const FORM_MONTH = parseInt(dateFields['month'])-1; // CURRENT_TIME.getMonth();
+    const FORM_DAY = parseInt(dateFields['day']); //CURRENT_TIME.getDate();
     
     let builtTime = undefined;
     const hourForm = parseInt(timeFields['hour']);
     const minuteForm = parseInt(timeFields['minute']);
     switch(field) {
       case "hour":
-        builtTime = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
+        builtTime = new Date(FORM_YEAR, FORM_MONTH, FORM_DAY,
           input, minuteForm);
         break;
       case "minute":
-        builtTime = new Date(CURRENT_YEAR, CURRENT_MONTH, CURRENT_DAY,
+        builtTime = new Date(FORM_YEAR, FORM_MONTH, FORM_DAY,
           hourForm, input);
         break;
       default:
@@ -209,7 +207,6 @@ function ReservationForm() {
   // TODO: prevent submission of invalid time
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log("ENTERING SUBMIT, PRE-VALIDATION");
     /* check time at beginning since default time of form is 12:00, and
     check during onChange={} will not be done
     */
@@ -219,13 +216,14 @@ function ReservationForm() {
       parseInt(dateFields['day']),
       parseInt(timeFields['hour'],
       parseInt(timeFields['minute'])));
-    console.log("VALIDATING SUBMISSION TIME, CURRENT =", CURRENT_TIME.getFullYear());
+    // const FORM_DATE_MIDNIGHT = new Date(parseInt(dateFields['year']),
+    //   parseInt(dateFields['month'])-1,
+    //   parseInt(dateFields['day']));
     if(!isValidTime(CURRENT_TIME, FORM_TIME)) {
       return;
     }
 
     const {errors, ...mid} = formData;
-    // console.log(`TYPEOF month and day: ${typeof(dateFields['month'])}; ${typeof(dateFields['day'])}`);
     const strMonth = String(dateFields['month']);
     const strDay = String(dateFields['day']);
     const ymd = [`${dateFields['year']}`,
@@ -242,29 +240,57 @@ function ReservationForm() {
     mid['reservation_date'] = ymd;
     mid['reservation_time'] = hms;
     const {hour, minute, ...submitForm} = mid;
-    // console.log("Submitted:", submitForm);
-    // setFormData({ ...initialFormState });
+    for(let key of Object.keys(submitForm)) {
+      const val = submitForm[key];
+      if(!val && val !== 0) {
+        console.log(`Blank field: ${key}`);
+        delete submitForm[key];
+      }
+    }
 
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
 
-    console.log("SUBMIT: PRE-FETCH");
     const abortController = new AbortController();
-    try {
+    // try {
+      console.log("TRY bad FETCH");
       fetch('http://localhost:5000/reservations/new', {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(submitForm),
         signal: abortController.signal,
-      })//.then((res) => res.json());
-    }
-    catch(error) {
-      // console.log(`${error['name']}; ${error['message']}`);
-      // if (error['name'] === "AbortError") console.log("Aborted");
-      // else throw error;
-      console.log("ERROR: " + error);
-    }
-      // .catch((err) => console.log(`ERROR: ${err}`));
+      })
+        .then((res) => res.json())
+        .catch((error) => {
+          console.log("SUBMIT CAUGHT ERROR");
+          let serverError = {};
+          serverError['server'] = `SERVER ERROR: ${error['name']} -- ${error['message']}`;
+          setFormData({
+            ...formData,
+            'errors': serverError,
+          });
+          return;
+        } )
+        ;
+      // fetch("something");
+      console.log("TRY post-FETCH");
+    // }
+    // catch(error) {
+    //   // TODO: ask during OH
+    //   console.log("SUBMIT CAUGHT ERROR");
+    //   let serverError = {};
+    //   serverError['server'] = `SERVER ERROR: ${error['name']} -- ${error['message']}`;
+    //   setFormData({
+    //     ...formData,
+    //     'errors': serverError,
+    //   });
+    //   return;
+    //   // setFormData({..., errors})
+    //   // console.log(`${error['name']}; ${error['message']}`);
+    //   // if (error['name'] === "AbortError") console.log("Aborted");
+    //   // else throw error;
+    //   // console.log("ERROR: " + error);
+    // }
     history.push("../../");
   };
 
@@ -394,10 +420,15 @@ function ReservationForm() {
           onChange={handleChange}
           value={formData['people']}
         />
+        <div className="alert alert-danger" hidden={!('server' in
+          formData['errors'])}>
+            {formData['errors']['server']}
+        </div>
       </label>
       <br/>
-      <button type="submit" disabled={!(formData['first_name'].length &&
-        formData['last_name'].length)}>Submit</button>
+      {/* <button type="submit" disabled={!(formData['first_name'].length &&
+        formData['last_name'].length)}>Submit</button> */}
+      <button type="submit">Submit</button>
       <button onClick={() => history.goBack()}>Cancel</button>
     </form>
   );
