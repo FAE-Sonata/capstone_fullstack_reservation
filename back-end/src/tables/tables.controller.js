@@ -34,17 +34,22 @@ async function tableExists(req, res, next) {
 }
 
 async function isValidSeating(req, res, next) {
-  const table = res.locals['table'];
-  if(table) {
+  const tableArr = res.locals['table'];
+  if(tableArr) {
+    const table = tableArr[0];
     if(!req.body || !req.body.data)
       return next({ status: 400, message: "Malformed request." });
     const reservation_id = req.body.data['reservation_id'];
     if(!reservation_id && reservation_id !== 0)
       return next({ status: 400, message: "No 'reservation_id' provided." });
-    const reservation = reservationsService.read(reservation_id);
-    if(reservation['people'] > table['capacity'])
+
+    const reservation = await reservationsService.read(reservation_id);
+    const partySize = reservation[0]['people'];
+    if(partySize > table['capacity']) {
       return next({ status: 500,
-        message: `Table capacity is ${table['capacity']}. Cannot seat ${reservation['people']}`});
+        message: `Table capacity is ${table['capacity']}. ` +
+          `Cannot seat ${partySize}`});
+    }
     return next();
   }
   next({ status: 404, message: "Table cannot be found." });
@@ -69,7 +74,6 @@ async function create(req, res, next) {
 
 async function seat(req, res, next) {
   if(res.locals['table']){
-    // console.log("CONTROLLER SEAT, has table: ", req.body.data);
     const { table_id } = req.params;
     tablesService
       .seat(table_id, req.body.data['reservation_id'])
