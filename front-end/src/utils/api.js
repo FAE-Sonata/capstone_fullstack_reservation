@@ -67,3 +67,28 @@ export async function listReservations(params, signal) {
     .then(formatReservationDate)
     .then(formatReservationTime);
 }
+
+/**
+ * Retrieves the reservation with the specified `reservation_id`
+ * @param reservation_id
+ *  the `id` property matching the desired reservation.
+ * @param signal
+ *  optional AbortController.signal
+ * @returns {Promise<[reservation]>}
+ *  a promise that resolves to the saved reservation.
+ */
+ export async function readReservation(reservation_id, signal) {
+  const url = `${API_BASE_URL}/reservation/${reservation_id}`;
+  return await fetchJson(url, { headers, signal }, []);
+}
+
+/**
+ * Retrieves all existing table.
+ * @returns {Promise<[table]>}
+ *  a promise that resolves to a possibly empty array of table saved in the database.
+ */
+
+ export async function listTables(signal) {
+  const url = new URL(`${API_BASE_URL}/tables`);
+  return await fetchJson(url, { headers, signal }, []);
+}

@@ -21,6 +21,18 @@ async function hasOnlyValidProperties(req, res, next) {
   next();
 }
 
+async function reservationExists(req, res, next) {
+  const { reservation_id: reservation_id } = req.params;
+
+  const reservation = await reservationsService.read(reservation_id);
+
+  if (reservation) {
+    res.locals['reservation'] = reservation;
+    return next();
+  }
+  next({ status: 404, message: "Reservation cannot be found." });
+}
+
 /**
  * List handler for reservation resources
  */
@@ -38,7 +50,12 @@ async function create(req, res, next) {
     .catch(next);
 }
 
+async function read(req, res) {
+  res.json({ data: res.locals['reservation'] });
+}
+
 module.exports = {
   list,
   create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired, create],
+  read: [asyncErrorBoundary(reservationExists), read],
 };

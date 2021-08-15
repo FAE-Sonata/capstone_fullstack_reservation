@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { listReservations } from "../utils/api";
+import { listReservations, listTables } from "../utils/api";
 import ErrorAlert from "../layout/ErrorAlert";
 import {previous, next} from "../utils/date-time";
 
@@ -10,9 +10,10 @@ import {previous, next} from "../utils/date-time";
  * @returns {JSX.Element}
  */
 function Dashboard({ date }) {
-  console.log(`DATE FED TO DASHBOARD is ${date}`);
   const [reservations, setReservations] = useState([]);
   const [reservationsError, setReservationsError] = useState(null);
+  const [tables, setTables] = useState([]);
+  const [tablesError, setTablesError] = useState(null);
 
   useEffect(loadDashboard, [date]);
 
@@ -22,14 +23,19 @@ function Dashboard({ date }) {
     listReservations({ date }, abortController.signal)
       .then(setReservations)
       .catch(setReservationsError);
+    listTables(abortController.signal)
+      .then(setTables)
+      .catch(setTablesError);
     return () => abortController.abort();
   }
-  let table = undefined;
+  // console.log("TABLES RETRIEVED: ", tables);
+  let reservationsTable = undefined;
+  let tablesTable = undefined;
   if(reservations.length) {
     // sort by reservation time ascending
-    reservations.sort((x,y) => (x['reservation_time'] > y['reservation_time']) ? (
-      1) : -1);
-    table = reservations.map(({reservation_id, first_name, last_name, mobile_number,
+    reservations.sort((x,y) => (x['reservation_time'] > y['reservation_time']
+      ) ? 1 : -1);
+    reservationsTable = reservations.map(({reservation_id, first_name, last_name, mobile_number,
       reservation_time, people},
       index) => (
       <tr key={index}>
@@ -39,6 +45,21 @@ function Dashboard({ date }) {
           <td>{mobile_number}</td>
           <td>{reservation_time}</td>
           <td>{people}</td>
+          <td><a href={`/reservations/${reservation_id}/seat`}>Seat</a></td>
+      </tr>
+    ));
+  }
+  if(tables.length) {
+    tables.sort((x,y) => (x['table_name'] > y['table_name']) ? 1 : -1);
+    tablesTable = tables.map(({table_id, table_name, capacity, reservation_id},
+      index) => (
+      <tr key={index}>
+        <td>{table_id}</td>
+        <td>{table_name}</td>
+        <td>{capacity}</td>
+        <td data-table-id-status={table_id}>{(reservation_id) ? "Occupied" :
+          "Free" } </td>
+        {/* data-table-id-status=${table.table_id} */}
       </tr>
     ));
   }
@@ -61,10 +82,23 @@ function Dashboard({ date }) {
             <th>Mobile number</th>
             <th>Reservation time</th>
             <th>Number of persons</th>
+            <th>[SEAT]</th>
           </tr>
         </thead>
-        <tbody>{table}</tbody>
+        <tbody>{reservationsTable}</tbody>
       </table>) : "No reservations."}
+      <ErrorAlert error={tablesError}/>
+      {(tables.length) ? (<table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Table name</th>
+            <th>Capacity</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>{tablesTable}</tbody>
+      </table> ) : "No tables."}
     </main>
   );
 }
