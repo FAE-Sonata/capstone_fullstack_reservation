@@ -15,8 +15,16 @@ function create(table) {
         .then((createdRecords) => createdRecords[0]);
 }
 
+function seat(table_id = 0, reservation_id = 0) {
+    // console.log("TABLES SERVICE SEAT FN reservation_id: ", reservation_id);
+    return knex("tables")
+        .update({reservation_id: reservation_id})
+        .where({table_id: table_id});
+}
+
 module.exports = {
     list,
     read,
     create,
+    seat,
 };

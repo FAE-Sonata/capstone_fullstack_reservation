@@ -9,6 +9,7 @@
  const controller = require("./tables.controller");
  
  router.route("/").get(controller.list);
+ router.route("/:table_id/seat").put(controller.seat);
  router.route("/new").post(controller['create']).all(methodNotAllowed);
  
  module.exports = router;
