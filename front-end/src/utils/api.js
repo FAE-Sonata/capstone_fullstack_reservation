@@ -78,7 +78,7 @@ export async function listReservations(params, signal) {
  *  a promise that resolves to the saved reservation.
  */
  export async function readReservation(reservation_id, signal) {
-  const url = `${API_BASE_URL}/reservation/${reservation_id}`;
+  const url = `${API_BASE_URL}/reservations/${reservation_id}`;
   return await fetchJson(url, { headers, signal }, []);
 }
 

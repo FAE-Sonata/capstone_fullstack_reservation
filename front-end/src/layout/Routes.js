@@ -7,6 +7,7 @@ import { today } from "../utils/date-time";
 import useQuery from "../utils/useQuery";
 import ReservationForm from "./ReservationForm";
 import TableForm from "./TableForm";
+import Seat from "./Seat";
 
 /**
  * Defines all the routes for the application.
@@ -24,6 +25,9 @@ function Routes() {
     <Switch>
       <Route exact={true} path="/tables/new">
         <TableForm/>
+      </Route>
+      <Route path="/reservations/:reservation_id/seat">
+        <Seat/>
       </Route>
       <Route exact={true} path="/reservations/new">
         <ReservationForm/>
