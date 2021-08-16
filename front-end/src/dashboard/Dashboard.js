@@ -59,6 +59,12 @@ function Dashboard({ date }) {
         <td>{capacity}</td>
         <td data-table-id-status={table_id}>{(reservation_id) ? "Occupied" :
           "Free" } </td>
+        <td>
+          <button data-table-id-finish={table_id} hidden={!reservation_id &&
+            reservation_id !== 0}>
+            Finish
+          </button>
+        </td>
         {/* data-table-id-status=${table.table_id} */}
       </tr>
     ));
@@ -95,6 +101,7 @@ function Dashboard({ date }) {
             <th>Table name</th>
             <th>Capacity</th>
             <th>Status</th>
+            <th>Finish</th>
           </tr>
         </thead>
         <tbody>{tablesTable}</tbody>

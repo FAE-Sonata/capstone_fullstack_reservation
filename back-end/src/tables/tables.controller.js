@@ -52,6 +52,23 @@ async function isValidSeating(req, res, next) {
     }
     return next();
   }
+  // should not be reached
+  next({ status: 404, message: "Table cannot be found." });
+}
+
+async function tableOccupied(req, res, next) {
+  const tableArr = res.locals['table'];
+  if(tableArr) {
+    const table = tableArr[0];
+    const reservation_id = table['reservation_id'];
+    if(!reservation_id && reservation_id !== 0) {
+      return next({ status: 400,
+        message: `Table ID ${table['table_id']} does not have a seated` +
+        "reservation."});
+      }
+    return next();
+  }
+  // should not be reached
   next({ status: 404, message: "Table cannot be found." });
 }
 
@@ -82,9 +99,21 @@ async function seat(req, res, next) {
   }
 }
 
+async function unseat(req, res, next) {
+  if(res.locals['table']){
+    const { table_id } = req.params;
+    tablesService
+      .unseat(table_id)
+      .then((data) => res.status(201).json({ data }))
+      .catch(next);
+  }
+}
+
 module.exports = {
   list,
   create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired, create],
   seat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(isValidSeating),
     seat],
+  unseat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(tableOccupied),
+    unseat],
 };
