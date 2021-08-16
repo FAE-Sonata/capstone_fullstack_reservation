@@ -72,8 +72,13 @@ function getOpenOn(someDate) {
  */
 function getFirstTopHour() {
   const CURRENT_TIME = new Date();
-  if(CURRENT_TIME.getDay() === 2 || CURRENT_TIME > getCloseOn(CURRENT_TIME))
-    return getOpenOn(next(today()));
+  if(CURRENT_TIME.getDay() === 2 || CURRENT_TIME > getCloseOn(CURRENT_TIME)) {
+    const tomorrowStr = next(today());
+    const fields = tomorrowStr.split("-");
+    const tomorrowMidnight = new Date(parseInt(fields[0]),
+      parseInt(fields[1])-1, parseInt(fields[2]));
+    return getOpenOn(tomorrowMidnight);
+  }
   else {
     const openToday = getOpenOn(CURRENT_TIME);
     if(CURRENT_TIME < openToday) return openToday;
@@ -139,8 +144,6 @@ function ReservationForm() {
     const EARLIEST_TIME = getOpenOn(formTime);
     const LATEST_TIME = getCloseOn(formTime);
     if(formTime < EARLIEST_TIME || formTime > LATEST_TIME) {
-      console.log("TIME RANGE: ", EARLIEST_TIME, "; ", LATEST_TIME);
-      console.log("ATTEMPTED TIME: ", formTime);
       setTimeErrors('time',
         "Invalid time: Reservation start time must be between ",
         RANGE_TIMES[0], " and ", RANGE_TIMES[1], ", inclusive.");
@@ -312,7 +315,7 @@ function ReservationForm() {
     for(let key of Object.keys(submitForm)) {
       const val = submitForm[key];
       if(!val && val !== 0) {
-        console.log(`Blank field: ${key}`);
+        // console.log(`Blank field: ${key}`);
         delete submitForm[key];
       }
     }

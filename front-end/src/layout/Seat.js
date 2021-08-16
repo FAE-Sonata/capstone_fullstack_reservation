@@ -80,10 +80,10 @@ function Seat() {
   }
 
   const handleSubmit = (event) => {
-    console.log("ENTERING SUBMIT HANDLER");
+    // console.log("ENTERING SUBMIT HANDLER");
     event.preventDefault();
     const selectedId = getSelected();
-    console.log("SELECTED ID was: ", selectedId);
+    // console.log("SELECTED ID was: ", selectedId);
     if(selectedId) {
       const submission = { data: { reservation_id: reservation_id } };
       const headers = new Headers();
