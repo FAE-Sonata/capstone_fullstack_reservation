@@ -64,7 +64,7 @@ async function tableOccupied(req, res, next) {
     if(!reservation_id && reservation_id !== 0) {
       return next({ status: 400,
         message: `Table ID ${table['table_id']} does not have a seated` +
-        "reservation."});
+        " reservation."});
       }
     return next();
   }

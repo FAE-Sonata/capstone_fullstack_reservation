@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useHistory } from "react-router";
 import { today, next } from "../utils/date-time";
 const RANGE_TIMES = ["10:30", "21:30"];
+let serverError = {};
 
 /**
  * 
@@ -105,7 +106,7 @@ function ReservationForm() {
     mobile_number: "(123) 456-7289", // validate
     // reservation_date: today(),
     people: 1,
-    errors: {},
+    // errors: {},
   };
   const initialDateFields = {
     year: DEFAULT_YEAR,
@@ -117,16 +118,18 @@ function ReservationForm() {
     minute: padInt(DEFAULT_FORM_TIME.getMinutes()),
   }
   const [formData, setFormData] = useState({ ...initialFormState });
+  const [errors, setErrors] = useState({});
   const [dateFields, setDateFields] = useState({...initialDateFields});
   const [timeFields, setTimeFields] = useState({...initialTimeFields});
 
   const setTimeErrors = (type, message) => {
-    let timeErrors = {};
-    timeErrors[type] = message;
-    setFormData({
-      ...formData,
-      'errors': timeErrors
-    });
+    let timeErrors = {[type]: message};
+    setErrors(timeErrors);
+    // timeErrors[type] = message;
+    // setFormData({
+    //   ...formData,
+    //   'errors': timeErrors
+    // });
   }
   const handleChange = ({ target }) => {
     setFormData({
@@ -145,8 +148,8 @@ function ReservationForm() {
     const LATEST_TIME = getCloseOn(formTime);
     if(formTime < EARLIEST_TIME || formTime > LATEST_TIME) {
       setTimeErrors('time',
-        "Invalid time: Reservation start time must be between ",
-        RANGE_TIMES[0], " and ", RANGE_TIMES[1], ", inclusive.");
+        "Invalid time: Reservation start time must be between " +
+        RANGE_TIMES[0] + " and " + RANGE_TIMES[1] + ", inclusive.");
       return false;
     }
     return true;
@@ -154,10 +157,11 @@ function ReservationForm() {
 
   const handleDate = ({ target }) => {
     // moment()
-    setFormData({
-      ...formData,
-      'errors': {}
-    });
+    setErrors({});
+    // setFormData({
+    //   ...formData,
+    //   'errors': {}
+    // });
     const dateErrors = {};
     const field = target.name;
     const input = parseInt(target.value);
@@ -169,10 +173,11 @@ function ReservationForm() {
     
     const setDateErrors = (type, message) => {
       dateErrors[type] = message;
-      setFormData({
-        ...formData,
-        'errors': dateErrors
-      });
+      setErrors(dateErrors);
+      // setFormData({
+      //   ...formData,
+      //   'errors': dateErrors
+      // });
     }
     let builtDateObj = undefined;
     const yearForm = dateFields['year'];
@@ -216,10 +221,11 @@ function ReservationForm() {
   };
 
   const handleTime = ({ target }) => {
-    setFormData({
-      ...formData,
-      'errors': {}
-    });
+    setErrors({});
+    // setFormData({
+    //   ...formData,
+    //   'errors': {}
+    // });
     // const timeErrors = {};
     const field = target.name;
     const input = parseInt(target.value);
@@ -254,11 +260,12 @@ function ReservationForm() {
   };
 
   const handlePhone = ({ target }) => {
-    setFormData({
-      ...formData,
-      'errors': {}
-    })
-    const errors = {};
+    setErrors({});
+    // setFormData({
+    //   ...formData,
+    //   'errors': {}
+    // })
+    const phoneError = {};
     const input = target.value;
     const phoneRegex = new RegExp(/\(?\s*[1-9][0-9]{2}\s*\)?\s*\-?\s*[0-9]{3}\s*\-?\s*[0-9]{4}/);
     if(phoneRegex.test(input)) {
@@ -268,32 +275,19 @@ function ReservationForm() {
       });
     }
     else {
-      errors["mobile"] = "Invalid mobile number format";
-      setFormData({
-        ...formData,
-        'errors': errors
-      })
+      phoneError["mobile"] = "Invalid mobile number format";
+      setErrors(phoneError);
+      // setFormData({
+      //   ...formData,
+      //   'errors': errors
+      // })
     }
   };
 
-  const handleSubmit = (event) => {
+  async function handleSubmit(event) {
     event.preventDefault();
-    setFormData({
-      ...formData,
-      'errors': {}
-    });
-    // /* check time at beginning since default time of form is 12:00, and
-    // check during onChange={} will not be done
-    // */
-    // const CURRENT_TIME = new Date();
-    // const FORM_TIME = new Date(parseInt(dateFields['year']),
-    //   parseInt(dateFields['month'])-1,
-    //   parseInt(dateFields['day']),
-    //   parseInt(timeFields['hour'],
-    //   parseInt(timeFields['minute'])));
-    // if(!isValidTime(CURRENT_TIME, FORM_TIME)) {
-    //   return;
-    // }
+    serverError = {};
+    setErrors({});
 
     const {errors, ...mid} = formData;
     const strMonth = String(dateFields['month']);
@@ -324,9 +318,7 @@ function ReservationForm() {
     headers.append("Content-Type", "application/json");
 
     const abortController = new AbortController();
-    // try {
-    // console.log("TRY bad FETCH");
-    fetch('http://localhost:5000/reservations/new', {
+    await fetch('http://localhost:5000/reservations/new', {
       method: 'POST',
       headers: headers,
       body: JSON.stringify(submitForm),
@@ -334,37 +326,25 @@ function ReservationForm() {
     })
       .then((res) => {
         if(res.status === 500) {
-          return res.json()
+          res.json()
             .then((json) => {
               console.log("SUBMIT status 500 THEN");
-              // console.log("OLD formData errors: ", formData['errors']);
               const { error } = json;
               console.log("RESULTANT JSON: ", json);
-              let serverError = {};
-              serverError['server'] = error; // `SERVER ERROR: ${error['name']} -- ${error['message']}`;
+              serverError = {'server': error};
               console.log("SET serverError: ", serverError);
-              setFormData({
-                ...formData,
-                'errors': serverError,
-              });
-              console.log("NEW formData errors: ", formData['errors']);
-              // console.log("result: ", json);
-              // console.log("message: ", message);
-              // console.log("stack trace: ", stackTrace);
             });
-            // .catch((error) => {
-            //   console.log("CAUGHT ERROR");              
-              // return;
-            // })
+          return;
           }
           else return res.json();
         });
-    // console.log("ERRORS number of keys: ", Object.keys(formData['errors']).length);
-    if(Object.keys(formData['errors']).length > 0){ 
-      console.log("POST FETCH formData has errors");
+    // console.log("FORM DATA PRE-EXIT OF SE: ", serverError);
+    // debugger
+    if(serverError.error){
+      console.log("POST FETCH has server errors");
       return;
     }
-    history.push(`../../dashboard?date=${ymd}`);
+    else history.push(`../../dashboard?date=${ymd}`);
   };
 
   return (
@@ -400,8 +380,8 @@ function ReservationForm() {
           value={formData['mobile_number']}
         />
         <div className="alert alert-danger" hidden={!('mobile' in
-          formData['errors'])}>
-          {formData['errors']['mobile']}
+          errors)}>
+          {errors['mobile']}
         </div>
       </label>
       <br/>
@@ -444,12 +424,12 @@ function ReservationForm() {
           value={dateFields['day']}
         />
         <div className="alert alert-danger" hidden={!('date' in
-          formData['errors'])}>
-            {formData['errors']['date']}
+          errors)}>
+            {errors['date']}
         </div>
         <div className="alert alert-danger" hidden={!('Tuesday' in
-          formData['errors'])}>
-            {formData['errors']['Tuesday']}
+          errors)}>
+            {errors['Tuesday']}
         </div>
       </label>
       <br />
@@ -478,8 +458,8 @@ function ReservationForm() {
           value={timeFields['minute']}
         />
         <div className="alert alert-danger" hidden={!('time' in
-          formData['errors'])}>
-            {formData['errors']['time']}
+          errors)}>
+            {errors['time']}
         </div>
       </label>
       <br />
@@ -493,9 +473,8 @@ function ReservationForm() {
           onChange={handleChange}
           value={formData['people']}
         />
-        <div className="alert alert-danger" hidden={!('server' in
-          formData['errors'])}>
-            {formData['errors']['server']}
+        <div className="alert alert-danger" hidden={!serverError['server']}>
+            {serverError['server']}
         </div>
       </label>
       <br/>

@@ -28,6 +28,30 @@ function Dashboard({ date }) {
       .catch(setTablesError);
     return () => abortController.abort();
   }
+
+  async function handleUnseat(event) {
+    const thisTableId = event['target']['attributes']['data-table-id-finish'][
+      'nodeValue'];
+    const abortController = new AbortController();
+    const headers = new Headers();
+    headers.append("Content-Type", "application/json");
+    if (window.confirm("Is this table ready to seat new guests? This" +
+      " cannot be undone.")) {
+      // debugger
+      await fetch(`http://localhost:5000/tables/${thisTableId}/seat`, {
+        method: 'DELETE',
+        headers: headers,
+        signal: abortController.signal,
+      });
+      // fetch("http://localhost:5000/tables", {
+      //   method: 'GET',
+      //   headers: headers,
+      //   signal: abortController.signal,
+      // });
+      window.location.reload(); // refresh
+    }
+  };
+
   // console.log("TABLES RETRIEVED: ", tables);
   let reservationsTable = undefined;
   let tablesTable = undefined;
@@ -60,7 +84,8 @@ function Dashboard({ date }) {
         <td data-table-id-status={table_id}>{(reservation_id) ? "Occupied" :
           "Free" } </td>
         <td>
-          <button data-table-id-finish={table_id} hidden={!reservation_id &&
+          <button data-table-id-finish={table_id} onClick={handleUnseat}
+            hidden={!reservation_id &&
             reservation_id !== 0}>
             Finish
           </button>

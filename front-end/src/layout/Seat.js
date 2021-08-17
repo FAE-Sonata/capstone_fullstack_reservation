@@ -99,6 +99,7 @@ function Seat() {
         .then((res) => res.json())
         .catch(setErrors);
       history.push(`../../dashboard`);
+      window.location.reload();
       return;
     }
   };
