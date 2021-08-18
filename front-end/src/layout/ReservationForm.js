@@ -314,11 +314,13 @@ function ReservationForm() {
       }
     }
 
+    const statusObj = { data: { status: "booked" } };
+
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
 
     const abortController = new AbortController();
-    await fetch('http://localhost:5000/reservations/new', {
+    const createdRecord = await fetch('http://localhost:5000/reservations/new', {
       method: 'POST',
       headers: headers,
       body: JSON.stringify(submitForm),
@@ -335,9 +337,24 @@ function ReservationForm() {
               console.log("SET serverError: ", serverError);
             });
           return;
-          }
-          else return res.json();
-        });
+        }
+        else {
+          // debugger;
+          return res.json();
+        }
+      });
+    // debugger;
+    if(createdRecord){
+      const createdId = createdRecord['data']['reservation_id'];
+      await fetch(`http://localhost:5000/reservations/${createdId}/status`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(statusObj),
+        signal: abortController.signal,
+      })
+        .then((res) => res.json())
+        .catch(setErrors);
+    }
     // console.log("FORM DATA PRE-EXIT OF SE: ", serverError);
     // debugger
     if(serverError.error){
@@ -348,7 +365,8 @@ function ReservationForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    // <form onSubmit={handleSubmit}>
+    <form>
       <label htmlFor="first_name">
         Enter Your First Name:
         <input
@@ -479,8 +497,8 @@ function ReservationForm() {
       </label>
       <br/>
       <button type="submit" disabled={!(formData['first_name'].length &&
-        formData['last_name'].length)}>Submit</button>
-      {/* <button type="submit">Submit</button> */}
+        formData['last_name'].length)} onClick={handleSubmit}>Submit</button>
+      {/* <button type="submit" onClick={handleSubmit}>Submit</button> */}
       <button onClick={() => history.goBack()}>Cancel</button>
     </form>
   );

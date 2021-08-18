@@ -8,10 +8,14 @@ const router = require("express").Router();
 const methodNotAllowed = require("../errors/methodNotAllowed");
 const controller = require("./reservations.controller");
 
-router.route("/").get(controller.list).all(methodNotAllowed);
+router.route("/").get(controller['list']).all(methodNotAllowed);
 router
   .route("/:reservation_id([0-9]+)") // only allow digits for input
-  .get(controller.read)
+  .get(controller['read'])
+  .all(methodNotAllowed);
+  router
+  .route("/:reservation_id([0-9]+)/status") // only allow digits for input
+  .put(controller['updateStatus'])
   .all(methodNotAllowed);
 router.route("/new").post(controller['create']).all(methodNotAllowed);
 

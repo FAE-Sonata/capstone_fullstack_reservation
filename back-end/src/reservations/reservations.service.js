@@ -20,9 +20,16 @@ function read(reservation_id = 0) {
     return knex("reservations").where({reservation_id: reservation_id});
 }
 
+function updateStatus(reservation_id = 0, newStatus) {
+    return knex("reservations")
+        .update({status: newStatus.trim().toLowerCase() })
+        .where({reservation_id: reservation_id});
+}
+
 module.exports = {
     list,
     listByDate,
     create,
     read,
+    updateStatus,
 };

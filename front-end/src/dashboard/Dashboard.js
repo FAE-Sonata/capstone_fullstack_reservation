@@ -35,6 +35,8 @@ function Dashboard({ date }) {
     const abortController = new AbortController();
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
+    const statusPacket = { data: { status: "finished" } };
+    // debugger;
     if (window.confirm("Is this table ready to seat new guests? This" +
       " cannot be undone.")) {
       // debugger
@@ -43,6 +45,13 @@ function Dashboard({ date }) {
         headers: headers,
         signal: abortController.signal,
       });
+      // set status within "reservations" table to FINISHED
+      await fetch(`http://localhost:5000/reservations/${event['target']['id']}/status`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(statusPacket),
+        signal: abortController.signal,
+      })
       // fetch("http://localhost:5000/tables", {
       //   method: 'GET',
       //   headers: headers,
@@ -56,11 +65,12 @@ function Dashboard({ date }) {
   let reservationsTable = undefined;
   let tablesTable = undefined;
   if(reservations.length) {
+    let activeReservations = reservations.filter(x => x['status'] !== "finished");
     // sort by reservation time ascending
-    reservations.sort((x,y) => (x['reservation_time'] > y['reservation_time']
+    activeReservations.sort((x,y) => (x['reservation_time'] > y['reservation_time']
       ) ? 1 : -1);
-    reservationsTable = reservations.map(({reservation_id, first_name, last_name, mobile_number,
-      reservation_time, people, status},
+    reservationsTable = activeReservations.map(({reservation_id, first_name,
+      last_name, mobile_number, reservation_time, people, status},
       index) => (
       <tr key={index}>
           <td>{reservation_id}</td>
@@ -88,7 +98,7 @@ function Dashboard({ date }) {
         <td>
           <button data-table-id-finish={table_id} onClick={handleUnseat}
             hidden={!reservation_id &&
-            reservation_id !== 0}>
+            reservation_id !== 0} id={reservation_id}>
             Finish
           </button>
         </td>

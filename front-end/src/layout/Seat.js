@@ -83,15 +83,26 @@ function Seat() {
     event.preventDefault();
     const selectedId = getSelected();
     if(selectedId && event.target['innerText'].toLowerCase() !== "cancel") {
-      const submission = { data: { reservation_id: reservation_id } };
+      const seatPacket = { data: { reservation_id: reservation_id } };
+      const statusPacket = { data: { status: "seated" } };
       const headers = new Headers();
       headers.append("Content-Type", "application/json");
 
       const abortController = new AbortController();
+      // PUT to tables table
       await fetch(`http://localhost:5000/tables/${selectedId}/seat`, {
         method: 'PUT',
         headers: headers,
-        body: JSON.stringify(submission),
+        body: JSON.stringify(seatPacket),
+        signal: abortController.signal,
+      })
+        .then((res) => res.json())
+        .catch(setErrors);
+      // PUT to reservations table
+      await fetch(`http://localhost:5000/reservations/${reservation_id}/status`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(statusPacket),
         signal: abortController.signal,
       })
         .then((res) => res.json())

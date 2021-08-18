@@ -3,6 +3,7 @@ const hasProperties = require("../errors/hasProperties");
 const reservationsService = require("./reservations.service");
 const VALID_PROPERTIES = ["first_name", "last_name", "mobile_number",
   "reservation_date", "reservation_time", "people"];
+const VALID_STATUS = ["booked", "seated", "finished"];
 const hasRequired = hasProperties(...VALID_PROPERTIES);
 
 async function hasOnlyValidProperties(req, res, next) {
@@ -33,6 +34,17 @@ async function reservationExists(req, res, next) {
   next({ status: 404, message: "Reservation cannot be found." });
 }
 
+async function isValidStatus(req, res, next) {
+  if(req.body && req.body['data'] && req.body['data']['status']) {
+    const newStatus = req.body['data']['status'].trim().toLowerCase();
+    if(!VALID_STATUS.includes(newStatus))
+      return next({status: 500,
+        message: `Status must be one of ${VALID_STATUS}`});
+    return next();
+  }
+  next({ status: 400, message: "Request must contain status." });
+}
+
 /**
  * List handler for reservation resources
  */
@@ -54,8 +66,20 @@ async function read(req, res) {
   res.json({ data: res.locals['reservation'] });
 }
 
+async function updateStatus(req, res, next) {
+  if(res.locals['reservation']){
+    const { reservation_id } = req.params;
+    reservationsService
+      .updateStatus(reservation_id, req.body['data']['status'])
+      .then((data) => res.status(201).json({ data }))
+      .catch(next);
+  }
+}
+
 module.exports = {
   list,
   create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired, create],
   read: [asyncErrorBoundary(reservationExists), read],
+  updateStatus: [asyncErrorBoundary(reservationExists),
+    asyncErrorBoundary(isValidStatus), updateStatus],
 };
