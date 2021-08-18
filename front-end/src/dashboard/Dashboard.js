@@ -60,7 +60,7 @@ function Dashboard({ date }) {
     reservations.sort((x,y) => (x['reservation_time'] > y['reservation_time']
       ) ? 1 : -1);
     reservationsTable = reservations.map(({reservation_id, first_name, last_name, mobile_number,
-      reservation_time, people},
+      reservation_time, people, status},
       index) => (
       <tr key={index}>
           <td>{reservation_id}</td>
@@ -69,7 +69,9 @@ function Dashboard({ date }) {
           <td>{mobile_number}</td>
           <td>{reservation_time}</td>
           <td>{people}</td>
-          <td><a href={`/reservations/${reservation_id}/seat`}>Seat</a></td>
+          <td><a href={`/reservations/${reservation_id}/seat`}
+            hidden={status !== "booked"}>Seat</a></td>
+          <td data-reservation-id-status={reservation_id}>{status}</td>
       </tr>
     ));
   }
@@ -114,6 +116,7 @@ function Dashboard({ date }) {
             <th>Reservation time</th>
             <th>Number of persons</th>
             <th>[SEAT]</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>{reservationsTable}</tbody>

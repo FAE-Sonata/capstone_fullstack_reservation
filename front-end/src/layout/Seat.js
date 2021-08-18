@@ -79,18 +79,16 @@ function Seat() {
     return undefined;
   }
 
-  const handleSubmit = (event) => {
-    // console.log("ENTERING SUBMIT HANDLER");
+  async function handleSubmit(event) {
     event.preventDefault();
     const selectedId = getSelected();
-    // console.log("SELECTED ID was: ", selectedId);
-    if(selectedId) {
+    if(selectedId && event.target['innerText'].toLowerCase() !== "cancel") {
       const submission = { data: { reservation_id: reservation_id } };
       const headers = new Headers();
       headers.append("Content-Type", "application/json");
 
       const abortController = new AbortController();
-      fetch(`http://localhost:5000/tables/${selectedId}/seat`, {
+      await fetch(`http://localhost:5000/tables/${selectedId}/seat`, {
         method: 'PUT',
         headers: headers,
         body: JSON.stringify(submission),
@@ -105,28 +103,28 @@ function Seat() {
   };
   return (
     <main>
-      <form onSubmit={handleSubmit}>
-        <h1>Seating</h1>
-        {/* <div className="d-md-flex mb-3">
-          <p><a href={`?date=${previous(date)}`}>[Previous date]</a></p><br/>
-          <h4 className="mb-0">{`Reservations for the date of ${date}`}</h4><br/>
-          <p><a href={`?date=${next(date)}`}>[Next date]</a></p><br/>
-        </div> */}
-        {/* <ErrorAlert error={reservationError} />
-        <ErrorAlert error={tablesError} /> */}
-        <ErrorAlert error={errors} />
-        <p>Select a table, format is "(table name) - number of seats":</p>
-        
-          <select name="table_id">
-            {tablesOptions}
-          </select>
-        
-        {/* <button type="submit" disabled={!getSelected()}>Submit</button> */}
-        <button type="submit">Submit</button>
-        <button onClick={() => history.goBack()}>Cancel</button>
-        {/* <p hidden={hasAvailable}>No tables matching party size of {
-          reservationSize} available. Press "Cancel" to go back.</p> */}
-      </form>
+      <h1>Seating</h1>
+      {/* <div className="d-md-flex mb-3">
+        <p><a href={`?date=${previous(date)}`}>[Previous date]</a></p><br/>
+        <h4 className="mb-0">{`Reservations for the date of ${date}`}</h4><br/>
+        <p><a href={`?date=${next(date)}`}>[Next date]</a></p><br/>
+      </div> */}
+      {/* <ErrorAlert error={reservationError} />
+      <ErrorAlert error={tablesError} /> */}
+      <ErrorAlert error={errors} />
+      <p>Select a table, format is "(table name) - number of seats":</p>
+      
+        <select name="table_id">
+          {tablesOptions}
+        </select>
+      
+      {/* <button type="submit" disabled={!getSelected()}>Submit</button> */}
+      <button type="submit" onClick={handleSubmit}>Submit</button>
+      <button onClick={(event) => {
+        // debugger;
+        history.goBack();}}>Cancel</button>
+      {/* <p hidden={hasAvailable}>No tables matching party size of {
+        reservationSize} available. Press "Cancel" to go back.</p> */}
     </main>
   );
 }
