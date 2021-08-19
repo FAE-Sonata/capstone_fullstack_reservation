@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { listReservations, listTables } from "../utils/api";
 import ErrorAlert from "../layout/ErrorAlert";
 import {previous, next} from "../utils/date-time";
+import DashboardReservations from "./DashboardReservations";
 
 /**
  * Defines the dashboard page.
@@ -36,10 +37,8 @@ function Dashboard({ date }) {
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
     const statusPacket = { data: { status: "finished" } };
-    // debugger;
     if (window.confirm("Is this table ready to seat new guests? This" +
       " cannot be undone.")) {
-      // debugger
       await fetch(`http://localhost:5000/tables/${thisTableId}/seat`, {
         method: 'DELETE',
         headers: headers,
@@ -61,30 +60,7 @@ function Dashboard({ date }) {
     }
   };
 
-  // console.log("TABLES RETRIEVED: ", tables);
-  let reservationsTable = undefined;
   let tablesTable = undefined;
-  if(reservations.length) {
-    let activeReservations = reservations.filter(x => x['status'] !== "finished");
-    // sort by reservation time ascending
-    activeReservations.sort((x,y) => (x['reservation_time'] > y['reservation_time']
-      ) ? 1 : -1);
-    reservationsTable = activeReservations.map(({reservation_id, first_name,
-      last_name, mobile_number, reservation_time, people, status},
-      index) => (
-      <tr key={index}>
-          <td>{reservation_id}</td>
-          <td>{last_name}</td>
-          <td>{first_name}</td>
-          <td>{mobile_number}</td>
-          <td>{reservation_time}</td>
-          <td>{people}</td>
-          <td><a href={`/reservations/${reservation_id}/seat`}
-            hidden={status !== "booked"}>Seat</a></td>
-          <td data-reservation-id-status={reservation_id}>{status}</td>
-      </tr>
-    ));
-  }
   if(tables.length) {
     tables.sort((x,y) => (x['table_name'] > y['table_name']) ? 1 : -1);
     tablesTable = tables.map(({table_id, table_name, capacity, reservation_id},
@@ -115,22 +91,8 @@ function Dashboard({ date }) {
         <h4 className="mb-0">{`Reservations for the date of ${date}`}</h4><br/>
         <p><a href={`?date=${next(date)}`}>[Next date]</a></p><br/>
       </div>
-      <ErrorAlert error={reservationsError} />
-      {(reservations.length) ? (<table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Last Name</th>
-            <th>First Name</th>
-            <th>Mobile number</th>
-            <th>Reservation time</th>
-            <th>Number of persons</th>
-            <th>[SEAT]</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>{reservationsTable}</tbody>
-      </table>) : "No reservations."}
+      <DashboardReservations arrReservations={reservations}
+        reservationsError={reservationsError}/>
       <ErrorAlert error={tablesError}/>
       {(tables.length) ? (<table>
         <thead>
