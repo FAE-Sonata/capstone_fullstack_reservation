@@ -46,7 +46,7 @@ async function isValidSeating(req, res, next) {
     const reservation = await reservationsService.read(reservation_id);
     const partySize = reservation[0]['people'];
     if(partySize > table['capacity']) {
-      return next({ status: 500,
+      return next({ status: 400,
         message: `Table capacity is ${table['capacity']}. ` +
           `Cannot seat ${partySize}`});
     }

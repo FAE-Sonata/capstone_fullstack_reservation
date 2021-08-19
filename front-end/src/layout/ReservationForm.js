@@ -125,11 +125,6 @@ function ReservationForm() {
   const setTimeErrors = (type, message) => {
     let timeErrors = {[type]: message};
     setErrors(timeErrors);
-    // timeErrors[type] = message;
-    // setFormData({
-    //   ...formData,
-    //   'errors': timeErrors
-    // });
   }
   const handleChange = ({ target }) => {
     setFormData({
@@ -158,14 +153,9 @@ function ReservationForm() {
   const handleDate = ({ target }) => {
     // moment()
     setErrors({});
-    // setFormData({
-    //   ...formData,
-    //   'errors': {}
-    // });
     const dateErrors = {};
     const field = target.name;
     const input = parseInt(target.value);
-    // const intInput = parseInt(input);
     const CURRENT_TIME = new Date();
     const CURRENT_DATE_OBJ = new Date(CURRENT_TIME.getFullYear(),
       CURRENT_TIME.getMonth(),
@@ -174,10 +164,6 @@ function ReservationForm() {
     const setDateErrors = (type, message) => {
       dateErrors[type] = message;
       setErrors(dateErrors);
-      // setFormData({
-      //   ...formData,
-      //   'errors': dateErrors
-      // });
     }
     let builtDateObj = undefined;
     const yearForm = dateFields['year'];
@@ -222,18 +208,13 @@ function ReservationForm() {
 
   const handleTime = ({ target }) => {
     setErrors({});
-    // setFormData({
-    //   ...formData,
-    //   'errors': {}
-    // });
-    // const timeErrors = {};
     const field = target.name;
     const input = parseInt(target.value);
 
     const CURRENT_TIME = new Date();
-    const FORM_YEAR = dateFields['year'];  //CURRENT_TIME.getFullYear();
-    const FORM_MONTH = parseInt(dateFields['month'])-1; // CURRENT_TIME.getMonth();
-    const FORM_DAY = parseInt(dateFields['day']); //CURRENT_TIME.getDate();
+    const FORM_YEAR = dateFields['year'];
+    const FORM_MONTH = parseInt(dateFields['month'])-1;
+    const FORM_DAY = parseInt(dateFields['day']);
     
     let builtTime = undefined;
     const hourForm = parseInt(timeFields['hour']);
@@ -261,14 +242,11 @@ function ReservationForm() {
 
   const handlePhone = ({ target }) => {
     setErrors({});
-    // setFormData({
-    //   ...formData,
-    //   'errors': {}
-    // })
     const phoneError = {};
     const input = target.value;
-    const phoneRegex = new RegExp(/\(?\s*[1-9][0-9]{2}\s*\)?\s*\-?\s*[0-9]{3}\s*\-?\s*[0-9]{4}/);
-    if(phoneRegex.test(input)) {
+    // debugger;
+    const phoneRegex = new RegExp(/^\(?\s*[1-9][0-9]{2}\s*\)?\s*\-?\s*[0-9]{3}\s*\-?\s*[0-9]{4}$/);
+    if(phoneRegex.test(input.trim())) {
       setFormData({
         ...formData,
         'mobile_number': input,
@@ -277,17 +255,22 @@ function ReservationForm() {
     else {
       phoneError["mobile"] = "Invalid mobile number format";
       setErrors(phoneError);
-      // setFormData({
-      //   ...formData,
-      //   'errors': errors
-      // })
     }
   };
 
   async function handleSubmit(event) {
+    // TODO: display blank field error
     event.preventDefault();
     serverError = {};
     setErrors({});
+    if(!(timeFields['hour'] && timeFields['minute'])) {
+      setErrors({'missing': "One or both time field(s) (hour, minute) missing."});
+      return;
+    }
+    if(formData['people'] < 1 || formData['people'] % 1) {
+      setErrors({'people': "People field must be a strictly positive integer."});
+      return;
+    }
 
     const {errors, ...mid} = formData;
     const strMonth = String(dateFields['month']);
@@ -491,15 +474,22 @@ function ReservationForm() {
           onChange={handleChange}
           value={formData['people']}
         />
-        <div className="alert alert-danger" hidden={!serverError['server']}>
-            {serverError['server']}
+        <div className="alert alert-danger" hidden={!errors['missing']}>
+            {errors['missing']}
+        </div>
+        <div className="alert alert-danger" hidden={!errors['people']}>
+            {errors['people']}
         </div>
       </label>
       <br/>
       <button type="submit" disabled={!(formData['first_name'].length &&
-        formData['last_name'].length)} onClick={handleSubmit}>Submit</button>
+        formData['last_name'].length && formData['people'])}
+        onClick={handleSubmit}>Submit</button>
       {/* <button type="submit" onClick={handleSubmit}>Submit</button> */}
-      <button onClick={() => history.goBack()}>Cancel</button>
+      <button onClick={() => {
+        debugger;
+        history.goBack();
+        }}>Cancel</button>
     </form>
   );
 }
