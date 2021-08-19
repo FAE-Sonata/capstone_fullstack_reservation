@@ -34,6 +34,14 @@ async function reservationExists(req, res, next) {
   next({ status: 404, message: "Reservation cannot be found." });
 }
 
+/**
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ * @returns a next() with an error if the body status is not one of the 3
+ * acceptable options
+ */
 async function isValidStatus(req, res, next) {
   if(req.body && req.body['data'] && req.body['data']['status']) {
     const newStatus = req.body['data']['status'].trim().toLowerCase();
@@ -51,7 +59,9 @@ async function isValidStatus(req, res, next) {
 async function list(req, res) {
   let data = await reservationsService.list();
   const selectedDate = req.query['date'];
+  const phoneSearch = req.query['mobile_phone'];
   if(selectedDate) data = await reservationsService.listByDate(selectedDate);
+  if(phoneSearch) data = await reservationsService.search(phoneSearch);
   res.json({ data });
 }
 
