@@ -103,7 +103,7 @@ function ReservationForm() {
 
   const initialFormState = {
     first_name: "", last_name: "",
-    mobile_number: "(123) 456-7289", // validate
+    mobile_number: "(123) 456-7890",
     // reservation_date: today(),
     people: 1,
     // errors: {},

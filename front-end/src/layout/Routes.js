@@ -8,6 +8,7 @@ import useQuery from "../utils/useQuery";
 import ReservationForm from "./ReservationForm";
 import TableForm from "./TableForm";
 import Seat from "./Seat";
+import PhoneSearch from "./PhoneSearch";
 
 /**
  * Defines all the routes for the application.
@@ -23,6 +24,9 @@ function Routes() {
   const suppliedDate = (queryDate) ? queryDate : (today());
   return (
     <Switch>
+      <Route exact={true} path="/search">
+        <PhoneSearch/>
+      </Route>
       <Route exact={true} path="/tables/new">
         <TableForm/>
       </Route>
