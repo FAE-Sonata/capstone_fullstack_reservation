@@ -3,7 +3,7 @@ const hasProperties = require("../errors/hasProperties");
 const reservationsService = require("./reservations.service");
 const VALID_PROPERTIES = ["first_name", "last_name", "mobile_number",
   "reservation_date", "reservation_time", "people"];
-const VALID_STATUS = ["booked", "seated", "finished"];
+const VALID_STATUS = ["booked", "seated", "finished", "cancelled"];
 const hasRequired = hasProperties(...VALID_PROPERTIES);
 
 async function hasOnlyValidProperties(req, res, next) {
@@ -39,7 +39,7 @@ async function reservationExists(req, res, next) {
  * @param {*} req 
  * @param {*} res 
  * @param {*} next 
- * @returns a next() with an error if the body status is not one of the 3
+ * @returns a next() with an error if the body status is not one of the 4
  * acceptable options
  */
 async function isValidStatus(req, res, next) {

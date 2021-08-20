@@ -10,11 +10,36 @@ import ErrorAlert from "../layout/ErrorAlert";
 function DashboardReservations({arrReservations, reservationsError,
   nonFinished=true}) {
   let reservationsTable = undefined;
+  async function cancelReservation(event) {
+    const thisId = event['target']['attributes']['data-reservation-id-cancel'][
+      'value'];
+    const abortController = new AbortController();
+    const headers = new Headers();
+    headers.append("Content-Type", "application/json");
+    const statusPacket = { data: { status: "cancelled" } };
+    if (window.confirm("Do you want to cancel this reservation? " + 
+      "This cannot be undone.")) {
+      // await fetch(`http://localhost:5000/tables/${thisTableId}/seat`, {
+      //   method: 'DELETE',
+      //   headers: headers,
+      //   signal: abortController.signal,
+      // });
+      // set status within "reservations" table to CANCELLED
+      await fetch(`http://localhost:5000/reservations/${thisId}/status`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(statusPacket),
+        signal: abortController.signal,
+      })
+      window.location.reload(); // refresh
+    }
+  }
   if(arrReservations.length) {
+    // filter out reservations with status of "cancelled"
+    let nonCancel = arrReservations.filter(x => x['status'] !== "cancelled");
     // filter out reservations with status of "finished"
     let activeReservations = (nonFinished) ? (
-      arrReservations.filter(x => x['status'] !== "finished")) :
-      arrReservations;
+      nonCancel.filter(x => x['status'] !== "finished")) : nonCancel;
     if(activeReservations.length){
         // sort by reservation time ascending
         activeReservations.sort((x,y) => {
@@ -39,6 +64,13 @@ function DashboardReservations({arrReservations, reservationsError,
                 <td><a href={`/reservations/${reservation_id}/seat`}
                     hidden={status !== "booked"}>Seat</a></td>
                 <td data-reservation-id-status={reservation_id}>{status}</td>
+                <td><a href={`/reservations/${reservation_id}/edit`}>Edit</a></td>
+                <td>
+                  <button data-reservation-id-cancel={reservation_id}
+                    onClick={cancelReservation}>
+                      Cancel
+                  </button>
+                </td>
             </tr>
         ));
     }
@@ -59,6 +91,8 @@ function DashboardReservations({arrReservations, reservationsError,
             <th>Number of persons</th>
             <th>[SEAT]</th>
             <th>Status</th>
+            <th>[EDIT]</th>
+            <th>[CANCEL]</th>
           </tr>
         </thead>
         <tbody>{reservationsTable}</tbody>
