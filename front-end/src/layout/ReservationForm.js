@@ -1,6 +1,6 @@
 // import moment from "moment";
-import React, { useState } from "react";
-import { useHistory } from "react-router";
+import React, { useEffect, useState } from "react";
+import { useHistory, useParams } from "react-router";
 // import { today, next } from "../utils/date-time";
 import { RANGE_TIMES,
   earliestHour,
@@ -8,6 +8,7 @@ import { RANGE_TIMES,
   getOpenOn,
   getCloseOn,
   getFirstTopHour } from "../utils/additional-time-functions";
+import { readReservation } from "../utils/api";
 let serverError = {};
 
 /**
@@ -19,8 +20,11 @@ function padInt(x) {
   return x.toString().padStart(2, "0");
 }
 
-function ReservationForm() {
+function ReservationForm({isNew = true}) {
   const history = useHistory();
+  const { reservation_id } = useParams();
+  const [clientErrors, setClientErrors] = useState({});
+  const [reservationErrors, setReservationErrors] = useState(null);
   let DEFAULT_FORM_TIME = getFirstTopHour();
   const DEFAULT_YEAR = DEFAULT_FORM_TIME.getFullYear();
 
@@ -41,13 +45,59 @@ function ReservationForm() {
     minute: padInt(DEFAULT_FORM_TIME.getMinutes()),
   }
   const [formData, setFormData] = useState({ ...initialFormState });
-  const [errors, setErrors] = useState({});
+  
   const [dateFields, setDateFields] = useState({...initialDateFields});
   const [timeFields, setTimeFields] = useState({...initialTimeFields});
 
+  async function loadReservation() {
+    if(!isNew && (reservation_id || reservation_id === 0)) {
+      const TIME_AT_LOAD = new Date();
+      const abortController = new AbortController();
+      const updateFields = (reservation) => {
+        setFormData({
+          first_name: reservation['first_name'],
+          last_name: reservation['last_name'],
+          mobile_number: reservation['mobile_number'],
+          people: reservation['people'],
+        });
+        const existingTime = new Date(
+          `${reservation['reservation_date']} ` +
+          `${reservation['reservation_time']}`);
+        if(existingTime > TIME_AT_LOAD) {
+          // const dateStr = reservation['reservation_date'];
+          // const timeStr = reservation['reservation_time'];
+          // const dateSplit = dateStr.split("-");
+          setDateFields({
+            year: existingTime.getFullYear(),
+            month: existingTime.getMonth() + 1,
+            day: existingTime.getDate(),
+          });
+          setTimeErrors({
+            hour: existingTime.getHours(),
+            minute: existingTime.getMinutes(),
+          });
+        }
+      }
+      try {
+        const reservationResponse = await readReservation(reservation_id,
+          abortController.signal);
+        const resObj = reservationResponse[0];
+        if(Object.keys(resObj).length > 0) updateFields(resObj);
+        // if(existingTime > TIME_AT_LOAD) setTimeObj(existingTime);
+      }
+      catch(error) {
+        setReservationErrors(error);
+      }
+      return () => abortController.abort();
+    }
+    return undefined;
+  }
+
+  useEffect(loadReservation, [isNew, reservation_id]);
+
   const setTimeErrors = (type, message) => {
     let timeErrors = {[type]: message};
-    setErrors(timeErrors);
+    setClientErrors(timeErrors);
   }
   const handleChange = ({ target }) => {
     setFormData({
@@ -75,7 +125,7 @@ function ReservationForm() {
 
   const handleDate = ({ target }) => {
     // moment()
-    setErrors({});
+    setClientErrors({});
     const dateErrors = {};
     const field = target.name;
     const input = parseInt(target.value);
@@ -86,7 +136,7 @@ function ReservationForm() {
     
     const setDateErrors = (type, message) => {
       dateErrors[type] = message;
-      setErrors(dateErrors);
+      setClientErrors(dateErrors);
     }
     let builtDateObj = undefined;
     const yearForm = dateFields['year'];
@@ -130,7 +180,7 @@ function ReservationForm() {
   };
 
   const handleTime = ({ target }) => {
-    setErrors({});
+    setClientErrors({});
     const field = target.name;
     const input = parseInt(target.value);
 
@@ -164,7 +214,7 @@ function ReservationForm() {
   };
 
   const handlePhone = ({ target }) => {
-    setErrors({});
+    setClientErrors({});
     const phoneError = {};
     const input = target.value;
     // debugger;
@@ -177,7 +227,7 @@ function ReservationForm() {
     }
     else {
       phoneError["mobile"] = "Invalid mobile number format";
-      setErrors(phoneError);
+      setClientErrors(phoneError);
     }
   };
 
@@ -185,13 +235,13 @@ function ReservationForm() {
     // TODO: display blank field error
     event.preventDefault();
     serverError = {};
-    setErrors({});
+    setClientErrors({});
     if(!(timeFields['hour'] && timeFields['minute'])) {
-      setErrors({'missing': "One or both time field(s) (hour, minute) missing."});
+      setClientErrors({'missing': "One or both time field(s) (hour, minute) missing."});
       return;
     }
     if(formData['people'] < 1 || formData['people'] % 1) {
-      setErrors({'people': "People field must be a strictly positive integer."});
+      setClientErrors({'people': "People field must be a strictly positive integer."});
       return;
     }
 
@@ -259,7 +309,7 @@ function ReservationForm() {
         signal: abortController.signal,
       })
         .then((res) => res.json())
-        .catch(setErrors);
+        .catch(setClientErrors);
     }
     // console.log("FORM DATA PRE-EXIT OF SE: ", serverError);
     // debugger
@@ -304,8 +354,8 @@ function ReservationForm() {
           value={formData['mobile_number']}
         />
         <div className="alert alert-danger" hidden={!('mobile' in
-          errors)}>
-          {errors['mobile']}
+          clientErrors)}>
+          {clientErrors['mobile']}
         </div>
       </label>
       <br/>
@@ -348,12 +398,12 @@ function ReservationForm() {
           value={dateFields['day']}
         />
         <div className="alert alert-danger" hidden={!('date' in
-          errors)}>
-            {errors['date']}
+          clientErrors)}>
+            {clientErrors['date']}
         </div>
         <div className="alert alert-danger" hidden={!('Tuesday' in
-          errors)}>
-            {errors['Tuesday']}
+          clientErrors)}>
+            {clientErrors['Tuesday']}
         </div>
       </label>
       <br />
@@ -382,8 +432,8 @@ function ReservationForm() {
           value={timeFields['minute']}
         />
         <div className="alert alert-danger" hidden={!('time' in
-          errors)}>
-            {errors['time']}
+          clientErrors)}>
+            {clientErrors['time']}
         </div>
       </label>
       <br />
@@ -397,11 +447,11 @@ function ReservationForm() {
           onChange={handleChange}
           value={formData['people']}
         />
-        <div className="alert alert-danger" hidden={!errors['missing']}>
-            {errors['missing']}
+        <div className="alert alert-danger" hidden={!clientErrors['missing']}>
+            {clientErrors['missing']}
         </div>
-        <div className="alert alert-danger" hidden={!errors['people']}>
-            {errors['people']}
+        <div className="alert alert-danger" hidden={!clientErrors['people']}>
+            {clientErrors['people']}
         </div>
       </label>
       <br/>
@@ -410,7 +460,7 @@ function ReservationForm() {
         onClick={handleSubmit}>Submit</button>
       {/* <button type="submit" onClick={handleSubmit}>Submit</button> */}
       <button onClick={() => {
-        debugger;
+        // debugger;
         history.goBack();
         }}>Cancel</button>
     </form>
