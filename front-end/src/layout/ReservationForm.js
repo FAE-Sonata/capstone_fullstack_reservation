@@ -72,7 +72,7 @@ function ReservationForm({isNew = true}) {
             month: existingTime.getMonth() + 1,
             day: existingTime.getDate(),
           });
-          setTimeErrors({
+          setTimeFields({
             hour: existingTime.getHours(),
             minute: existingTime.getMinutes(),
           });
@@ -217,7 +217,6 @@ function ReservationForm({isNew = true}) {
     setClientErrors({});
     const phoneError = {};
     const input = target.value;
-    // debugger;
     const phoneRegex = new RegExp(/^\(?\s*[1-9][0-9]{2}\s*\)?\s*\-?\s*[0-9]{3}\s*\-?\s*[0-9]{4}$/);
     if(phoneRegex.test(input.trim())) {
       setFormData({
@@ -478,7 +477,7 @@ function ReservationForm({isNew = true}) {
         formData['last_name'].length && formData['people'])}
         onClick={handleSubmit}>Submit</button>
       {/* <button type="submit" onClick={handleSubmit}>Submit</button> */}
-      <button onClick={() => {
+      <button onClick={(event) => {
         // debugger;
         history.goBack();
         }}>Cancel</button>
