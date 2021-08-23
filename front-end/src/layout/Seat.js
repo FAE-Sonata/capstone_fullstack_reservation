@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { listTables, readReservation } from "../utils/api";
+import { listTables, readReservation, seatTable,
+  updateStatus } from "../utils/api";
 import ErrorAlert from "../layout/ErrorAlert";
 import { useHistory, useParams } from "react-router";
 
@@ -89,22 +90,12 @@ function Seat() {
       headers.append("Content-Type", "application/json");
 
       const abortController = new AbortController();
-      // PUT to tables table
-      await fetch(`http://localhost:5000/tables/${selectedId}/seat`, {
-        method: 'PUT',
-        headers: headers,
-        body: JSON.stringify(seatPacket),
-        signal: abortController.signal,
-      })
+      // set reservation_id in table entry
+      await seatTable(selectedId, seatPacket, abortController.signal)
         .then((res) => res.json())
         .catch(setErrors);
-      // PUT to reservations table
-      await fetch(`http://localhost:5000/reservations/${reservation_id}/status`, {
-        method: 'PUT',
-        headers: headers,
-        body: JSON.stringify(statusPacket),
-        signal: abortController.signal,
-      })
+      // update "status" field in reservations table entry
+      await updateStatus(reservation_id, statusPacket, abortController.signal)
         .then((res) => res.json())
         .catch(setErrors);
       history.push(`../../dashboard`);

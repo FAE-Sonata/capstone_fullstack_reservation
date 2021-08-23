@@ -28,7 +28,7 @@ function TableForm() {
     for(let key of Object.keys(submitForm)) {
       const val = submitForm[key];
       if(!val && val !== 0) {
-        console.log(`Blank field: ${key}`);
+        // console.log(`Blank field: ${key}`);
         delete submitForm[key];
       }
     }
@@ -37,8 +37,6 @@ function TableForm() {
     headers.append("Content-Type", "application/json");
 
     const abortController = new AbortController();
-    // try {
-    // console.log("TRY bad FETCH");
     fetch('http://localhost:5000/tables/new', {
       method: 'POST',
       headers: headers,
@@ -49,32 +47,19 @@ function TableForm() {
         if(res.status === 500) {
           return res.json()
             .then((json) => {
-              console.log("SUBMIT status 500 THEN");
-              // console.log("OLD formData errors: ", formData['errors']);
               const { error } = json;
-              console.log("RESULTANT JSON: ", json);
               let serverError = {};
               serverError['server'] = error; // `SERVER ERROR: ${error['name']} -- ${error['message']}`;
-              console.log("SET serverError: ", serverError);
               setFormData({
                 ...formData,
                 'errors': serverError,
               });
-              console.log("NEW formData errors: ", formData['errors']);
-              // console.log("result: ", json);
-              // console.log("message: ", message);
-              // console.log("stack trace: ", stackTrace);
             });
-            // .catch((error) => {
-            //   console.log("CAUGHT ERROR");              
-              // return;
-            // })
           }
           else return res.json();
         });
-    // console.log("ERRORS number of keys: ", Object.keys(formData['errors']).length);
     if(Object.keys(formData['errors']).length > 0){ 
-      console.log("POST FETCH formData has errors");
+      // console.log("POST FETCH formData has errors");
       return;
     }
     history.push(`../../`);

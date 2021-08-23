@@ -1,12 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import ErrorAlert from "../layout/ErrorAlert";
+import { updateStatus } from "../utils/api";
 
-/**
- * Defines the dashboard page.
- * @param date
- *  the date for which the user wants to view reservations.
- * @returns {JSX.Element}
- */
 function DashboardReservations({arrReservations, reservationsError,
   nonFinished=true}) {
   let reservationsTable = undefined;
@@ -19,18 +14,14 @@ function DashboardReservations({arrReservations, reservationsError,
     const statusPacket = { data: { status: "cancelled" } };
     if (window.confirm("Do you want to cancel this reservation? " + 
       "This cannot be undone.")) {
+        /* cancel a seated reservation? */
       // await fetch(`http://localhost:5000/tables/${thisTableId}/seat`, {
       //   method: 'DELETE',
       //   headers: headers,
       //   signal: abortController.signal,
       // });
       // set status within "reservations" table to CANCELLED
-      await fetch(`http://localhost:5000/reservations/${thisId}/status`, {
-        method: 'PUT',
-        headers: headers,
-        body: JSON.stringify(statusPacket),
-        signal: abortController.signal,
-      })
+      await updateStatus(thisId, statusPacket, abortController.signal);
       window.location.reload(); // refresh
     }
   }

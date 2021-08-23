@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { listReservations, listTables } from "../utils/api";
+import { listReservations, listTables, unseatTable,
+  updateStatus } from "../utils/api";
 import ErrorAlert from "../layout/ErrorAlert";
 import {previous, next} from "../utils/date-time";
 import DashboardReservations from "./DashboardReservations";
@@ -39,23 +40,11 @@ function Dashboard({ date }) {
     const statusPacket = { data: { status: "finished" } };
     if (window.confirm("Is this table ready to seat new guests? This" +
       " cannot be undone.")) {
-      await fetch(`http://localhost:5000/tables/${thisTableId}/seat`, {
-        method: 'DELETE',
-        headers: headers,
-        signal: abortController.signal,
-      });
+      const reservation_id = event['target']['id'];
+      await unseatTable(thisTableId, abortController.signal);
       // set status within "reservations" table to FINISHED
-      await fetch(`http://localhost:5000/reservations/${event['target']['id']}/status`, {
-        method: 'PUT',
-        headers: headers,
-        body: JSON.stringify(statusPacket),
-        signal: abortController.signal,
-      })
-      // fetch("http://localhost:5000/tables", {
-      //   method: 'GET',
-      //   headers: headers,
-      //   signal: abortController.signal,
-      // });
+      await updateStatus(reservation_id, statusPacket, abortController.signal);
+      // await listTables(abortController.signal);
       window.location.reload(); // refresh
     }
   };

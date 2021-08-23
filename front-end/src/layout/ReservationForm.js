@@ -7,7 +7,8 @@ import { RANGE_TIMES,
   getOpenOn,
   getCloseOn,
   getFirstTopHour } from "../utils/additional-time-functions";
-import { readReservation } from "../utils/api";
+import { postReservation, readReservation, updateReservation,
+  updateStatus } from "../utils/api";
 let serverError = {};
 
 /**
@@ -64,9 +65,6 @@ function ReservationForm({isNew = true}) {
           `${reservation['reservation_date']} ` +
           `${reservation['reservation_time']}`);
         if(existingTime > TIME_AT_LOAD) {
-          // const dateStr = reservation['reservation_date'];
-          // const timeStr = reservation['reservation_time'];
-          // const dateSplit = dateStr.split("-");
           setDateFields({
             year: existingTime.getFullYear(),
             month: existingTime.getMonth() + 1,
@@ -246,11 +244,14 @@ function ReservationForm({isNew = true}) {
     const {errors, ...mid} = formData;
     const strMonth = String(dateFields['month']);
     const strDay = String(dateFields['day']);
+    const strHour = String(timeFields['hour']);
+    const strMinute = String(timeFields['minute']);
+
     const ymd = [`${dateFields['year']}`,
       `${strMonth.padStart(2, "0")}`,
       `${strDay.padStart(2, "0")}`].join("-");
-    const hms = [`${timeFields['hour'].padStart(2, "0")}`,
-      `${timeFields['minute'].padStart(2, "0")}`, "00"].join(":");
+    const hms = [`${strHour.padStart(2, "0")}`,
+      `${strMinute.padStart(2, "0")}`, "00"].join(":");
     // delete submitForm['errors'];
     const teleRe = new RegExp(/[\-()\s]/g);
     const rawTele = mid['mobile_number'].replaceAll(teleRe, "");
@@ -274,12 +275,8 @@ function ReservationForm({isNew = true}) {
     const abortController = new AbortController();
     if(isNew) {
       const statusObj = { data: { status: "booked" } };
-      const createdRecord = await fetch('http://localhost:5000/reservations/new', {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(submitForm),
-        signal: abortController.signal,
-      })
+      const createdRecord = await postReservation(submitForm,
+        abortController.signal)
         .then((res) => {
           if(res.status === 500) {
             res.json()
@@ -287,7 +284,8 @@ function ReservationForm({isNew = true}) {
                 // console.log("SUBMIT status 500 THEN");
                 const { error } = json;
                 // console.log("RESULTANT JSON: ", json);
-                serverError = {'server': error};
+                // serverError = {'server': error};
+                setReservationErrors({'server': error});
                 // console.log("SET serverError: ", serverError);
               });
             return;
@@ -299,31 +297,21 @@ function ReservationForm({isNew = true}) {
         });
       if(createdRecord){
         const createdId = createdRecord['data']['reservation_id'];
-        await fetch(`http://localhost:5000/reservations/${createdId}/status`, {
-          method: 'PUT',
-          headers: headers,
-          body: JSON.stringify(statusObj),
-          signal: abortController.signal,
-        })
+        await updateStatus(createdId, statusObj, abortController.signal)
           .then((res) => res.json())
-          .catch(setClientErrors);
+          .catch(setReservationErrors);
       }
     }
     else {
       submitForm['reservation_id'] = parseInt(reservation_id);
       const dataObj = { data: submitForm };
-      await fetch(`http://localhost:5000/reservations/${reservation_id}`, {
-        method: 'PUT',
-        headers: headers,
-        body: JSON.stringify(dataObj),
-        signal: abortController.signal,
-      })
+      await updateReservation(reservation_id, dataObj, abortController.signal)
         .then((res) => {
           if(res.status === 500) {
             res.json()
               .then((json) => {
                 const { error } = json;
-                serverError = {'server': error};
+                setReservationErrors({'server': error});
               });
             return;
           }
