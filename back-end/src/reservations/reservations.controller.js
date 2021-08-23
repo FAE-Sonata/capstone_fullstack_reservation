@@ -76,6 +76,21 @@ async function read(req, res) {
   res.json({ data: res.locals['reservation'] });
 }
 
+async function update(req, res, next) {
+  console.log("CONTROLLER UPDATE -- ENTERED");
+  const updatedReservation = req.body['data'];
+  // const updatedReservation = {
+  //   ...res.locals['reservation'],
+  //   ...req.body['data'],
+  //   reservation_id: res.locals['reservation']['reservation_id'],
+  // };
+  console.log("OBJECT: ", updatedReservation);
+
+  const data = await reservationsService.update(updatedReservation);
+
+  res.json({ data });
+}
+
 async function updateStatus(req, res, next) {
   if(res.locals['reservation']){
     const { reservation_id } = req.params;
@@ -90,6 +105,7 @@ module.exports = {
   list,
   create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired, create],
   read: [asyncErrorBoundary(reservationExists), read],
+  update: [asyncErrorBoundary(reservationExists), asyncErrorBoundary(update)],
   updateStatus: [asyncErrorBoundary(reservationExists),
     asyncErrorBoundary(isValidStatus), updateStatus],
 };

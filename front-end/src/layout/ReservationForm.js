@@ -1,7 +1,6 @@
 // import moment from "moment";
 import React, { useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router";
-// import { today, next } from "../utils/date-time";
 import { RANGE_TIMES,
   earliestHour,
   latestHour,
@@ -54,6 +53,7 @@ function ReservationForm({isNew = true}) {
       const TIME_AT_LOAD = new Date();
       const abortController = new AbortController();
       const updateFields = (reservation) => {
+        // debugger;
         setFormData({
           first_name: reservation['first_name'],
           last_name: reservation['last_name'],
@@ -232,7 +232,6 @@ function ReservationForm({isNew = true}) {
   };
 
   async function handleSubmit(event) {
-    // TODO: display blank field error
     event.preventDefault();
     serverError = {};
     setClientErrors({});
@@ -270,49 +269,67 @@ function ReservationForm({isNew = true}) {
       }
     }
 
-    const statusObj = { data: { status: "booked" } };
-
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
 
     const abortController = new AbortController();
-    const createdRecord = await fetch('http://localhost:5000/reservations/new', {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(submitForm),
-      signal: abortController.signal,
-    })
-      .then((res) => {
-        if(res.status === 500) {
-          res.json()
-            .then((json) => {
-              console.log("SUBMIT status 500 THEN");
-              const { error } = json;
-              console.log("RESULTANT JSON: ", json);
-              serverError = {'server': error};
-              console.log("SET serverError: ", serverError);
-            });
-          return;
-        }
-        else {
-          // debugger;
-          return res.json();
-        }
-      });
-    // debugger;
-    if(createdRecord){
-      const createdId = createdRecord['data']['reservation_id'];
-      await fetch(`http://localhost:5000/reservations/${createdId}/status`, {
-        method: 'PUT',
+    if(isNew) {
+      const statusObj = { data: { status: "booked" } };
+      const createdRecord = await fetch('http://localhost:5000/reservations/new', {
+        method: 'POST',
         headers: headers,
-        body: JSON.stringify(statusObj),
+        body: JSON.stringify(submitForm),
         signal: abortController.signal,
       })
-        .then((res) => res.json())
-        .catch(setClientErrors);
+        .then((res) => {
+          if(res.status === 500) {
+            res.json()
+              .then((json) => {
+                // console.log("SUBMIT status 500 THEN");
+                const { error } = json;
+                // console.log("RESULTANT JSON: ", json);
+                serverError = {'server': error};
+                // console.log("SET serverError: ", serverError);
+              });
+            return;
+          }
+          else {
+            // debugger;
+            return res.json();
+          }
+        });
+      if(createdRecord){
+        const createdId = createdRecord['data']['reservation_id'];
+        await fetch(`http://localhost:5000/reservations/${createdId}/status`, {
+          method: 'PUT',
+          headers: headers,
+          body: JSON.stringify(statusObj),
+          signal: abortController.signal,
+        })
+          .then((res) => res.json())
+          .catch(setClientErrors);
+      }
+    }
+    else {
+      await fetch(`http://localhost:5000/reservations/${reservation_id}`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(submitForm),
+        signal: abortController.signal,
+      })
+        .then((res) => {
+          if(res.status === 500) {
+            res.json()
+              .then((json) => {
+                const { error } = json;
+                serverError = {'server': error};
+              });
+            return;
+          }
+          else return res.json();
+        });
     }
     // console.log("FORM DATA PRE-EXIT OF SE: ", serverError);
-    // debugger
     if(serverError.error){
       console.log("POST FETCH has server errors");
       return;
