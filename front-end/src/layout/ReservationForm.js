@@ -311,10 +311,12 @@ function ReservationForm({isNew = true}) {
       }
     }
     else {
+      submitForm['reservation_id'] = parseInt(reservation_id);
+      const dataObj = { data: submitForm };
       await fetch(`http://localhost:5000/reservations/${reservation_id}`, {
         method: 'PUT',
         headers: headers,
-        body: JSON.stringify(submitForm),
+        body: JSON.stringify(dataObj),
         signal: abortController.signal,
       })
         .then((res) => {

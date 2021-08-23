@@ -77,17 +77,10 @@ async function read(req, res) {
 }
 
 async function update(req, res, next) {
-  console.log("CONTROLLER UPDATE -- ENTERED");
+  /* assumed to have reservation_id from ReservationForm.js handleSubmit()
+  branch */
   const updatedReservation = req.body['data'];
-  // const updatedReservation = {
-  //   ...res.locals['reservation'],
-  //   ...req.body['data'],
-  //   reservation_id: res.locals['reservation']['reservation_id'],
-  // };
-  console.log("OBJECT: ", updatedReservation);
-
   const data = await reservationsService.update(updatedReservation);
-
   res.json({ data });
 }
 
