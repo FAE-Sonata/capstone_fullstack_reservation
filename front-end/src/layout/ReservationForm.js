@@ -1,6 +1,6 @@
 // import moment from "moment";
 import React, { useEffect, useState } from "react";
-import { useHistory, useParams } from "react-router";
+import { useHistory, useParams, useRouteMatch } from "react-router";
 import { RANGE_TIMES,
   earliestHour,
   latestHour,
@@ -21,6 +21,7 @@ function padInt(x) {
 }
 
 function ReservationForm({isNew = true}) {
+  const { urmUrl } = useRouteMatch();
   const history = useHistory();
   const { reservation_id } = useParams();
   const [clientErrors, setClientErrors] = useState({});
@@ -466,8 +467,9 @@ function ReservationForm({isNew = true}) {
         onClick={handleSubmit}>Submit</button>
       {/* <button type="submit" onClick={handleSubmit}>Submit</button> */}
       <button onClick={(event) => {
+        event.preventDefault();
         // debugger;
-        history.goBack();
+        history.goBack(2);
         }}>Cancel</button>
     </form>
   );

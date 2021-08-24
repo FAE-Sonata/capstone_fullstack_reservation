@@ -81,6 +81,18 @@ export async function postReservation(created, signal) {
 }
 
 /**
+ * Creates new table from the new table form.
+ * @returns {Promise<[table]>}
+ *  a promise that resolves to a possibly empty array of table saved in the database.
+ */
+
+ export async function postTable(created, signal) {
+  const url = new URL(`${API_BASE_URL}/tables/new`);
+  return await fetch(url,
+    { method: 'POST', headers, body: JSON.stringify(created), signal }, []);
+}
+
+/**
  * Updates reservation entry with status from given object.
  * @returns {Promise<[reservation]>}
  *  a promise that resolves to a possibly empty array of reservation saved in the database.

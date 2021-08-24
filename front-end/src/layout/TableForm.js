@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { useHistory } from "react-router";
+import { postTable } from "../utils/api";
 
 function TableForm() {
   const history = useHistory();
   const initialFormState = {
     table_name: "",
     capacity: 1,
-    errors: {},
   };
+  const [formErrors, setFormErrors] = useState({});
+  const [tableErrors, setTableErrors] = useState({});
   const [formData, setFormData] = useState({ ...initialFormState });
   
   const handleChange = ({ target }) => {
@@ -17,19 +19,15 @@ function TableForm() {
     });
   };
 
-  const handleSubmit = (event) => {
+  async function handleSubmit(event) {
     event.preventDefault();
-    setFormData({
-      ...formData,
-      'errors': {}
-    });
-    
-    const {errors, ...submitForm} = formData;    
-    for(let key of Object.keys(submitForm)) {
-      const val = submitForm[key];
+    setFormErrors({}); setTableErrors({});
+
+    for(let key of Object.keys(formData)) {
+      const val = formData[key];
       if(!val && val !== 0) {
         // console.log(`Blank field: ${key}`);
-        delete submitForm[key];
+        delete formData[key];
       }
     }
 
@@ -37,28 +35,18 @@ function TableForm() {
     headers.append("Content-Type", "application/json");
 
     const abortController = new AbortController();
-    fetch('http://localhost:5000/tables/new', {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(submitForm),
-      signal: abortController.signal,
-    })
+    await postTable(formData, abortController.signal)
       .then((res) => {
         if(res.status === 500) {
           return res.json()
             .then((json) => {
               const { error } = json;
-              let serverError = {};
-              serverError['server'] = error; // `SERVER ERROR: ${error['name']} -- ${error['message']}`;
-              setFormData({
-                ...formData,
-                'errors': serverError,
-              });
+              setTableErrors({'server': error});
             });
           }
           else return res.json();
         });
-    if(Object.keys(formData['errors']).length > 0){ 
+    if(Object.keys(tableErrors).length > 0){ 
       // console.log("POST FETCH formData has errors");
       return;
     }
@@ -75,6 +63,7 @@ function TableForm() {
           name="table_name"
           onChange={handleChange}
           value={formData['table_name']}
+          required
         />
       </label>
       <br />
@@ -87,14 +76,15 @@ function TableForm() {
           min="1"
           onChange={handleChange}
           value={formData['capacity']}
+          required
         />
-        <div className="alert alert-danger" hidden={!('server' in
-          formData['errors'])}>
-            {formData['errors']['server']}
-        </div>
+        {/* <div className="alert alert-danger" hidden={!Object.keys(tableErrors).length}>
+            {tableErrors}
+        </div> */}
       </label>
       <br/>
-      <button type="submit" disabled={!formData['table_name'].length}>Submit</button>
+      <button type="submit" disabled={!formData['table_name'].length ||
+        !parseInt(formData['capacity'])}>Submit</button>
       {/* <button type="submit">Submit</button> */}
       <button onClick={() => history.goBack()}>Cancel</button>
     </form>
