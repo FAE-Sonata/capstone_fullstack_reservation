@@ -109,6 +109,31 @@ async function unseat(req, res, next) {
   }
 }
 
+async function hasValidStatus(req, res, next) {
+  const { reservation_id } = req.params;
+  const reservation = await reservationsService.read(reservation_id);
+  if(!reservation.length) {
+    return next(
+      { status: 400, message: `No reservation with id ${reservation_id}.`});
+  }
+  const reservationStatus = reservation[0]['status'];
+  if(reservationStatus.toLowerCase() !== "seated") {
+    return next(
+      { status: 400,
+        message: "Attempting to find matching table when reservation status" +
+        ` is: ${reservationStatus}`});
+  }
+  return next();
+}
+
+async function findTableWithReservation(req, res, next) {
+  const { reservation_id } = req.params;
+  tablesService
+    .findTableWithReservation(reservation_id)
+    .then((data) => res.status(200).json({ data }))
+    .catch(next);
+}
+
 module.exports = {
   list,
   create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired, create],
@@ -116,4 +141,6 @@ module.exports = {
     seat],
   unseat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(tableOccupied),
     unseat],
+  findTableWithReservation: [asyncErrorBoundary(hasValidStatus),
+    asyncErrorBoundary(findTableWithReservation)],
 };

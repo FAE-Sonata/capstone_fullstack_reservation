@@ -29,10 +29,17 @@ function unseat(table_id = 0) {
         .where({table_id: table_id});
 }
 
+function findTableWithReservation(reservation_id = 0) {
+    return knex("tables")
+        .select("table_id")
+        .where({reservation_id: reservation_id});
+}
+
 module.exports = {
     list,
     read,
     create,
     seat,
     unseat,
+    findTableWithReservation,
 };

@@ -165,3 +165,17 @@ export async function listTables(signal) {
   const url = new URL(`${API_BASE_URL}/tables`);
   return await fetchJson(url, { headers, signal }, []);
 }
+
+/**
+ * Retrieves the table id of the table seated with the specified `reservation_id`
+ * @param reservation_id
+ *  the `id` property matching the desired reservation.
+ * @param signal
+ *  optional AbortController.signal
+ * @returns {Promise<[table_id]>}
+ *  a promise that resolves to the matching table_id.
+ */
+ export async function findTableWithReservation(reservation_id, signal) {
+  const url = `${API_BASE_URL}/tables/${reservation_id}/findtable`;
+  return await fetchJson(url, { headers, signal }, []);
+}

@@ -1,6 +1,6 @@
 import React from "react";
 import ErrorAlert from "../layout/ErrorAlert";
-import { updateStatus } from "../utils/api";
+import { findTableWithReservation, unseatTable, updateStatus } from "../utils/api";
 
 function DashboardReservations({arrReservations, reservationsError,
   nonFinished=true}) {
@@ -8,18 +8,17 @@ function DashboardReservations({arrReservations, reservationsError,
   async function cancelReservation(event) {
     const thisId = event['target']['attributes']['data-reservation-id-cancel'][
       'value'];
+    const thisStatus = event['target']['attributes']['data-status']['value'];
     const abortController = new AbortController();
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
     const statusPacket = { data: { status: "cancelled" } };
     if (window.confirm("Do you want to cancel this reservation? " + 
       "This cannot be undone.")) {
-        /* cancel a seated reservation? */
-      // await fetch(`http://localhost:5000/tables/${thisTableId}/seat`, {
-      //   method: 'DELETE',
-      //   headers: headers,
-      //   signal: abortController.signal,
-      // });
+      if(thisStatus === "seated") { /* cancel a seated reservation: */
+        const idArr = await findTableWithReservation(thisId, abortController.signal);
+        await unseatTable(idArr[0]['table_id'], abortController.signal);
+      }
       // set status within "reservations" table to CANCELLED
       await updateStatus(thisId, statusPacket, abortController.signal);
       window.location.reload(); // refresh
@@ -55,9 +54,11 @@ function DashboardReservations({arrReservations, reservationsError,
                 <td><a href={`/reservations/${reservation_id}/seat`}
                     hidden={status !== "booked"}>Seat</a></td>
                 <td data-reservation-id-status={reservation_id}>{status}</td>
-                <td><a href={`/reservations/${reservation_id}/edit`}>Edit</a></td>
+                <td><a href={`/reservations/${reservation_id}/edit`}
+                  hidden={status !== "booked"}>Edit</a></td>
                 <td>
                   <button data-reservation-id-cancel={reservation_id}
+                    data-status={status}
                     onClick={cancelReservation}>
                       Cancel
                   </button>
