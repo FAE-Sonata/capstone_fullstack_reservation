@@ -121,7 +121,7 @@ async function validTime(req, res, next) {
 async function list(req, res) {
   let data = undefined;
   const selectedDate = req.query['date'];
-  const phoneSearch = req.query['mobile_phone'];
+  const phoneSearch = req.query['mobile_phone'] || req.query['mobile_number'];
   if(selectedDate) {
     data = await reservationsService.listByDate(selectedDate);
     data = data.filter(x => x['status'] !== "finished");
