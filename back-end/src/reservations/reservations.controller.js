@@ -58,7 +58,7 @@ async function isValidStatus(req, res, next) {
  * @param {*} next 
  * @returns next() with an error status if any one of the input formats is invalid
  */
-async function postIsValid(req, res, next) {
+async function validFormat(req, res, next) {
   const attemptedPost = req.body['data'];
   const formPeople = attemptedPost['people'];
   if(typeof(formPeople) !== "number" || formPeople < 1 || formPeople % 1)
@@ -74,6 +74,26 @@ async function postIsValid(req, res, next) {
     return next(
       { status: 400,
         message: "'reservation_time' must be in HH:mm format." });
+  next();
+}
+
+async function validTime(req, res, next) {
+  const attemptedPost = req.body['data'];
+  const CURRENT_TIME = new Date();
+  const postTimeObj = new Date(
+    [attemptedPost['reservation_date'],
+      attemptedPost['reservation_time']].join(" "));
+  if(postTimeObj < CURRENT_TIME) {
+    return next(
+      { status: 400,
+        message: "reservation date and time must be in the future." });
+  }
+  if(postTimeObj.getDay() === 2) {
+    return next(
+      { status: 400,
+        message: "reservation date cannot be on a Tuesday; restaurant is " +
+        "closed on Tuesdays." });
+  }
   next();
 }
 
@@ -123,7 +143,7 @@ async function updateStatus(req, res, next) {
 module.exports = {
   list,
   create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired,
-    asyncErrorBoundary(postIsValid), create],
+    asyncErrorBoundary(validFormat), asyncErrorBoundary(validTime), create],
   read: [asyncErrorBoundary(reservationExists), read],
   update: [asyncErrorBoundary(reservationExists), asyncErrorBoundary(update)],
   updateStatus: [asyncErrorBoundary(reservationExists),
