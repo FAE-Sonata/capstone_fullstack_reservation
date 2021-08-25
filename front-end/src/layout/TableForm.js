@@ -22,20 +22,16 @@ function TableForm() {
   async function handleSubmit(event) {
     event.preventDefault();
     setFormErrors({}); setTableErrors({});
-
-    for(let key of Object.keys(formData)) {
-      const val = formData[key];
-      if(!val && val !== 0) {
-        // console.log(`Blank field: ${key}`);
-        delete formData[key];
-      }
-    }
+    let submitForm = {
+      table_name: formData['table_name'],
+      capacity: parseInt(formData['capacity']),
+    };
 
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
 
     const abortController = new AbortController();
-    await postTable(formData, abortController.signal)
+    await postTable(submitForm, abortController.signal)
       .then((res) => {
         if(res.status === 500) {
           return res.json()

@@ -7,9 +7,9 @@ const hasRequired = hasProperties(...VALID_PROPERTIES);
 
 async function hasOnlyValidProperties(req, res, next) {
   const { data = {} } = req.body;
-
+  const EXTENDED_VALID = ["table_name", "capacity", "people"];
   const invalidFields = Object.keys(data).filter(
-    (field) => !VALID_PROPERTIES.includes(field)
+    (field) => !EXTENDED_VALID.includes(field)
   );
 
   if (invalidFields.length) {
@@ -33,10 +33,22 @@ async function tableExists(req, res, next) {
   next({ status: 404, message: "Table cannot be found." });
 }
 
+async function validFormat(req, res, next) {
+  const attemptedPost = ('data' in req.body) ? (req.body['data']) : (req.body);
+  if(attemptedPost['table_name'].length < 2)
+    return next(
+      { status: 400, message: "'table_name' must be at least 2 characters." });
+  const formCapacity = ('capacity' in attemptedPost) ?
+    attemptedPost['capacity'] : attemptedPost['people'];
+  if(typeof(formCapacity) !== "number" || formCapacity < 1 || formCapacity % 1)
+    return next(
+      { status: 400, message: "'capacity' must be a positive integer." });
+  next();
+}
+
 async function isValidSeating(req, res, next) {
   const tableArr = res.locals['table'];
   if(tableArr) {
-    const table = tableArr[0];
     if(!req.body || !req.body.data)
       return next({ status: 400, message: "Malformed request." });
     const reservation_id = req.body.data['reservation_id'];
@@ -44,10 +56,14 @@ async function isValidSeating(req, res, next) {
       return next({ status: 400, message: "No 'reservation_id' provided." });
 
     const reservation = await reservationsService.read(reservation_id);
-    const partySize = reservation[0]['people'];
-    if(partySize > table['capacity']) {
+    console.log("VALID SEATING CHECK: ", reservation);
+    if(!reservation || !Object.keys(reservation))
+      return next(
+        { status: 404, message: `No reservation with id ${reservation_id}`});
+    const partySize = reservation['people'];
+    if(partySize > tableArr['capacity']) {
       return next({ status: 400,
-        message: `Table capacity is ${table['capacity']}. ` +
+        message: `Table capacity is ${tableArr['capacity']}. ` +
           `Cannot seat ${partySize}`});
     }
     return next();
@@ -59,11 +75,10 @@ async function isValidSeating(req, res, next) {
 async function tableOccupied(req, res, next) {
   const tableArr = res.locals['table'];
   if(tableArr) {
-    const table = tableArr[0];
-    const reservation_id = table['reservation_id'];
+    const reservation_id = tableArr['reservation_id'];
     if(!reservation_id && reservation_id !== 0) {
       return next({ status: 400,
-        message: `Table ID ${table['table_id']} does not have a seated` +
+        message: `Table ID ${tableArr['table_id']} does not have a seated` +
         " reservation."});
       }
     return next();
@@ -77,14 +92,13 @@ async function tableOccupied(req, res, next) {
  */
 async function list(req, res) {
   let data = await tablesService.list();
-//   const selectedDate = req.query['date'];
-//   if(selectedDate) data = await tablesService.listByDate(selectedDate);
   res.json({ data });
 }
 
 async function create(req, res, next) {
+  let sent = ('data' in req.body) ? (req.body['data']) : (req.body);
   tablesService
-    .create(req.body)
+    .create(sent)
     .then((data) => res.status(201).json({ data }))
     .catch(next);
 }
@@ -94,7 +108,7 @@ async function seat(req, res, next) {
     const { table_id } = req.params;
     tablesService
       .seat(table_id, req.body.data['reservation_id'])
-      .then((data) => res.status(201).json({ data }))
+      .then((data) => res.status(200).json({ data }))
       .catch(next);
   }
 }
@@ -112,11 +126,11 @@ async function unseat(req, res, next) {
 async function hasValidStatus(req, res, next) {
   const { reservation_id } = req.params;
   const reservation = await reservationsService.read(reservation_id);
-  if(!reservation.length) {
+  if(!Object.keys(reservation).length) {
     return next(
       { status: 400, message: `No reservation with id ${reservation_id}.`});
   }
-  const reservationStatus = reservation[0]['status'];
+  const reservationStatus = reservation['status'];
   if(reservationStatus.toLowerCase() !== "seated") {
     return next(
       { status: 400,
@@ -136,7 +150,8 @@ async function findTableWithReservation(req, res, next) {
 
 module.exports = {
   list,
-  create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired, create],
+  create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired,
+    asyncErrorBoundary(validFormat), create],
   seat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(isValidSeating),
     seat],
   unseat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(tableOccupied),

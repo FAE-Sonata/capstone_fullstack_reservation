@@ -34,8 +34,8 @@ function PhoneSearch() {
     headers.append("Content-Type", "application/json");
     const abortController = new AbortController();
     listReservations({ 'mobile_phone': searchTerm }, abortController.signal)
-        .then(setReservations)
-        .catch(setReservationsError);
+      .then(setReservations)
+      .catch(setReservationsError);
   };
 
   return (
@@ -52,7 +52,7 @@ function PhoneSearch() {
         </label>
         <button type="submit" disabled={!searchTerm.length}
           onClick={handleSubmit}>Find</button>
-        <button onClick={() => history.goBack()}>Cancel</button>
+        {/* <button onClick={() => history.goBack()}>Cancel</button> */}
         <br/>
         <div className="alert alert-danger" hidden={!inputError.length}>
           {inputError}

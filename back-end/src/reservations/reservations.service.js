@@ -20,7 +20,9 @@ function create(reservation) {
 }
 
 function read(reservation_id = 0) {
-    return knex("reservations").where({reservation_id: reservation_id});
+    return knex("reservations")
+        .where({reservation_id: reservation_id})
+        .first();
 }
 
 function update(updatedReservation) {

@@ -7,7 +7,6 @@ import { useHistory, useParams } from "react-router";
 function Seat() {
   const history = useHistory();
   const { reservation_id } = useParams(); // reservations/:reservation_id/seat
-  // console.log("SEAT - reservation_id: ", reservation_id);
 
   const [reservation, setReservation] = useState({});
   const [reservationSize, setReservationSize] = useState(undefined);
@@ -22,8 +21,8 @@ function Seat() {
       try {
         const reservationResponse = await readReservation(reservation_id,
           abortController.signal);
-        setReservation(reservationResponse[0]);
-        setReservationSize(reservationResponse[0]['people']);
+        setReservation(reservationResponse);
+        setReservationSize(reservationResponse['people']);
         const tablesResponse = await listTables(abortController.signal);
         setTables(tablesResponse);
       }
@@ -71,7 +70,6 @@ function Seat() {
   function getSelected() {
     const selectElem = document.querySelector("select");
     if(selectElem && Object.keys(selectElem).length) {
-      // console.log("HAS SELECT ELEMENT");
       for(let k = 0; k < selectElem.options.length; k++) {
         const thisOption = selectElem.options[k];
         if(thisOption.selected) return thisOption.value;

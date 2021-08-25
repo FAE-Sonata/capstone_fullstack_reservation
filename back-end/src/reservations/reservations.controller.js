@@ -60,13 +60,13 @@ async function isValidStatus(req, res, next) {
  * @returns next() with an error status if any one of the input formats is invalid
  */
 async function validFormat(req, res, next) {
-  const attemptedPost = req.body['data'];
+  const attemptedPost = ('data' in req.body) ? (req.body['data']) : (req.body);
   const formPeople = attemptedPost['people'];
   if(typeof(formPeople) !== "number" || formPeople < 1 || formPeople % 1)
     return next(
       { status: 400, message: "'people' must be a positive integer." });
   const dateRegex = new RegExp(/^[1-9]\d*\-[0-1]\d\-[0-3]\d$/);
-  const timeRegex = new RegExp(/^[0-2]?\d\:[0-5]\d$/);
+  const timeRegex = new RegExp(/^[0-2]?\d\:[0-5]\d(\:00)?$/);
   if(!dateRegex.test(attemptedPost['reservation_date']))
     return next(
       { status: 400,
@@ -79,7 +79,7 @@ async function validFormat(req, res, next) {
 }
 
 async function validTime(req, res, next) {
-  const attemptedPost = req.body['data'];
+  const attemptedPost = ('data' in req.body) ? (req.body['data']) : (req.body);
   const CURRENT_TIME = new Date();
   const postTimeObj = new Date(
     [attemptedPost['reservation_date'],

@@ -17,7 +17,7 @@ function DashboardReservations({arrReservations, reservationsError,
       "This cannot be undone.")) {
       if(thisStatus === "seated") { /* cancel a seated reservation: */
         const idArr = await findTableWithReservation(thisId, abortController.signal);
-        await unseatTable(idArr[0]['table_id'], abortController.signal);
+        await unseatTable(idArr['table_id'], abortController.signal);
       }
       // set status within "reservations" table to CANCELLED
       await updateStatus(thisId, statusPacket, abortController.signal);
@@ -59,6 +59,7 @@ function DashboardReservations({arrReservations, reservationsError,
                 <td>
                   <button data-reservation-id-cancel={reservation_id}
                     data-status={status}
+                    hidden={['finished', 'cancelled'].find(x => x===status)}
                     onClick={cancelReservation}>
                       Cancel
                   </button>

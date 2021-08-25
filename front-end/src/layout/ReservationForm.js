@@ -55,7 +55,6 @@ function ReservationForm({isNew = true}) {
       const TIME_AT_LOAD = new Date();
       const abortController = new AbortController();
       const updateFields = (reservation) => {
-        // debugger;
         setFormData({
           first_name: reservation['first_name'],
           last_name: reservation['last_name'],
@@ -80,8 +79,9 @@ function ReservationForm({isNew = true}) {
       try {
         const reservationResponse = await readReservation(reservation_id,
           abortController.signal);
-        const resObj = reservationResponse[0];
-        if(Object.keys(resObj).length > 0) updateFields(resObj);
+        // const resObj = reservationResponse[0];
+        if(Object.keys(reservationResponse).length > 0)
+          updateFields(reservationResponse);
         // if(existingTime > TIME_AT_LOAD) setTimeObj(existingTime);
       }
       catch(error) {
@@ -262,13 +262,7 @@ function ReservationForm({isNew = true}) {
     mid['reservation_date'] = ymd;
     mid['reservation_time'] = hms;
     const {hour, minute, ...submitForm} = mid;
-    for(let key of Object.keys(submitForm)) {
-      const val = submitForm[key];
-      if(!val && val !== 0) {
-        // console.log(`Blank field: ${key}`);
-        delete submitForm[key];
-      }
-    }
+    submitForm['people'] = parseInt(mid['people']);
 
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
@@ -292,7 +286,6 @@ function ReservationForm({isNew = true}) {
             return;
           }
           else {
-            // debugger;
             return res.json();
           }
         });
@@ -468,7 +461,6 @@ function ReservationForm({isNew = true}) {
       {/* <button type="submit" onClick={handleSubmit}>Submit</button> */}
       <button onClick={(event) => {
         event.preventDefault();
-        // debugger;
         history.goBack(2);
         }}>Cancel</button>
     </form>
