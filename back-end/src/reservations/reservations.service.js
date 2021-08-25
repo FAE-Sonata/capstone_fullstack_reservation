@@ -5,7 +5,10 @@ function list() {
 }
 
 function listByDate(selectedDate) {
-    return knex("reservations").select("*").where({reservation_date: selectedDate});
+    return knex("reservations")
+        .select("*")
+        .where({reservation_date: selectedDate})
+        .orderBy("reservation_time");
 }
 
 function create(reservation) {

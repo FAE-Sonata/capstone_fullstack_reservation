@@ -24,14 +24,12 @@ async function hasOnlyValidProperties(req, res, next) {
 
 async function reservationExists(req, res, next) {
   const { reservation_id: reservation_id } = req.params;
-
   const reservation = await reservationsService.read(reservation_id);
-
-  if (reservation) {
+  if (reservation && (reservation.length || Object.keys(reservation).length)) {
     res.locals['reservation'] = reservation;
     return next();
   }
-  next({ status: 404, message: "Reservation cannot be found." });
+  next({ status: 404, message: `Reservation id ${reservation_id} cannot be found.` });
 }
 
 /**
@@ -54,20 +52,48 @@ async function isValidStatus(req, res, next) {
 }
 
 /**
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ * @returns next() with an error status if any one of the input formats is invalid
+ */
+async function postIsValid(req, res, next) {
+  const attemptedPost = req.body['data'];
+  const formPeople = attemptedPost['people'];
+  if(typeof(formPeople) !== "number" || formPeople < 1 || formPeople % 1)
+    return next(
+      { status: 400, message: "'people' must be a positive integer." });
+  const dateRegex = new RegExp(/^[1-9]\d*\-[0-1]\d\-[0-3]\d$/);
+  const timeRegex = new RegExp(/^[0-2]?\d\:[0-5]\d$/);
+  if(!dateRegex.test(attemptedPost['reservation_date']))
+    return next(
+      { status: 400,
+        message: "'reservation_date' must be in yyyy-mm-dd format."});
+  if(!timeRegex.test(attemptedPost['reservation_time']))
+    return next(
+      { status: 400,
+        message: "'reservation_time' must be in HH:mm format." });
+  next();
+}
+
+/**
  * List handler for reservation resources
  */
 async function list(req, res) {
-  let data = await reservationsService.list();
+  let data = undefined;
   const selectedDate = req.query['date'];
   const phoneSearch = req.query['mobile_phone'];
   if(selectedDate) data = await reservationsService.listByDate(selectedDate);
-  if(phoneSearch) data = await reservationsService.search(phoneSearch);
+  else if(phoneSearch) data = await reservationsService.search(phoneSearch);
+  else data = await reservationsService.list();
   res.json({ data });
 }
 
 async function create(req, res, next) {
+  let sent = ('data' in req.body) ? (req.body['data']) : (req.body);
   reservationsService
-    .create(req.body)
+    .create(sent)
     .then((data) => res.status(201).json({ data }))
     .catch(next);
 }
@@ -96,7 +122,8 @@ async function updateStatus(req, res, next) {
 
 module.exports = {
   list,
-  create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired, create],
+  create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired,
+    asyncErrorBoundary(postIsValid), create],
   read: [asyncErrorBoundary(reservationExists), read],
   update: [asyncErrorBoundary(reservationExists), asyncErrorBoundary(update)],
   updateStatus: [asyncErrorBoundary(reservationExists),

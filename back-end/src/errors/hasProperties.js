@@ -7,14 +7,14 @@
  */
 function hasProperties(...properties) {
   return function (res, req, next) {
-    const data = res.body;
+    let data = res.body;
+    if('data' in res.body) data = res.body['data']; // for Postman format
     try {
       properties.forEach((property) => {
-        // console.log(`DATA WAS $ `)
         const value = data[property];
-        if (!value) {
+        if (!value && value !== 0) {
           const error = new Error(`A '${property}' property is required.`);
-          error.status = 500;
+          error.status = 400;
           throw error;
         }
       });
