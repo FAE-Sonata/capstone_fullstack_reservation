@@ -47,24 +47,30 @@ async function validFormat(req, res, next) {
 }
 
 async function isValidSeating(req, res, next) {
-  const tableArr = res.locals['table'];
-  if(tableArr) {
+  const tableModified = res.locals['table'];
+  if(tableModified) {
+    if(tableModified['reservation_id']){
+      return next(
+        { status: 400,
+          message: `Table ${tableModified['table_id']} occupied with seating` +
+          ` ${tableModified['reservation_id']}` });
+      }
     if(!req.body || !req.body.data)
       return next({ status: 400, message: "Malformed request." });
-    const reservation_id = req.body.data['reservation_id'];
-    if(!reservation_id && reservation_id !== 0)
+    const to_be_seated_id = req.body.data['reservation_id'];
+    if(!to_be_seated_id && to_be_seated_id !== 0)
       return next({ status: 400, message: "No 'reservation_id' provided." });
 
-    const reservation = await reservationsService.read(reservation_id);
-    console.log("VALID SEATING CHECK: ", reservation);
+    const reservation = await reservationsService.read(to_be_seated_id);
     if(!reservation || !Object.keys(reservation))
       return next(
-        { status: 404, message: `No reservation with id ${reservation_id}`});
+        { status: 404, message: `No reservation with id ${to_be_seated_id}`});
     const partySize = reservation['people'];
-    if(partySize > tableArr['capacity']) {
-      return next({ status: 400,
-        message: `Table capacity is ${tableArr['capacity']}. ` +
-          `Cannot seat ${partySize}`});
+    if(partySize > tableModified['capacity']) {
+      return next(
+        { status: 400,
+          message: `Table capacity is ${tableModified['capacity']}. Cannot` +
+          ` seat ${partySize}`});
     }
     return next();
   }
@@ -77,9 +83,10 @@ async function tableOccupied(req, res, next) {
   if(tableArr) {
     const reservation_id = tableArr['reservation_id'];
     if(!reservation_id && reservation_id !== 0) {
-      return next({ status: 400,
-        message: `Table ID ${tableArr['table_id']} does not have a seated` +
-        " reservation."});
+      return next(
+        { status: 400,
+          message: `Table ID ${tableArr['table_id']} does not have a seated` +
+          " reservation."});
       }
     return next();
   }
