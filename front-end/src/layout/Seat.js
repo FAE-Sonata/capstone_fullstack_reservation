@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { listTables, readReservation, seatTable,
-  updateStatus } from "../utils/api";
+import { listTables, readReservation, seatTable } from "../utils/api";
 import ErrorAlert from "../layout/ErrorAlert";
 import { useHistory, useParams } from "react-router";
 
@@ -83,17 +82,14 @@ function Seat() {
     const selectedId = getSelected();
     if(selectedId && event.target['innerText'].toLowerCase() !== "cancel") {
       const seatPacket = { data: { reservation_id: reservation_id } };
-      const statusPacket = { data: { status: "seated" } };
       const headers = new Headers();
       headers.append("Content-Type", "application/json");
 
       const abortController = new AbortController();
-      // set reservation_id in table entry
+      /* set reservation_id in table entry, which also
+      updates "status" field in reservations table entry
+      */
       await seatTable(selectedId, seatPacket, abortController.signal)
-        .then((res) => res.json())
-        .catch(setErrors);
-      // update "status" field in reservations table entry
-      await updateStatus(reservation_id, statusPacket, abortController.signal)
         .then((res) => res.json())
         .catch(setErrors);
       history.push(`../../dashboard`);

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { listReservations, listTables, unseatTable,
-  updateStatus } from "../utils/api";
+import { listReservations, listTables, unseatTable } from "../utils/api";
 import ErrorAlert from "../layout/ErrorAlert";
 import {previous, next} from "../utils/date-time";
 import DashboardReservations from "./DashboardReservations";
@@ -37,14 +36,12 @@ function Dashboard({ date }) {
     const abortController = new AbortController();
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
-    const statusPacket = { data: { status: "finished" } };
     if (window.confirm("Is this table ready to seat new guests? This" +
       " cannot be undone.")) {
-      const reservation_id = event['target']['id'];
+      /* set "reservation_id" field in "tables" table to null, and
+      set status within "reservations" table to FINISHED */
       await unseatTable(thisTableId, abortController.signal);
-      // set status within "reservations" table to FINISHED
-      await updateStatus(reservation_id, statusPacket, abortController.signal);
-      // await listTables(abortController.signal);
+      // await listTables(abortController.signal); STILL NEEDED ?
       window.location.reload(); // refresh
     }
   };

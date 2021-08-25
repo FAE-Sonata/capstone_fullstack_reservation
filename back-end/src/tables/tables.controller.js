@@ -138,7 +138,7 @@ async function seat(req, res, next) {
 async function unseat(req, res, next) {
   if(res.locals['table']){
     const { table_id } = req.params;
-    const affectedReservation = req.body.data['reservation_id'];
+    const affectedReservation = res.locals['table']['reservation_id'];
     await reservationsService.updateStatus(affectedReservation, "finished");
     tablesService
       .unseat(table_id)
