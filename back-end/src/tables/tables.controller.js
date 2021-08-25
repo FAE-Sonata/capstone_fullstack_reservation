@@ -30,7 +30,7 @@ async function tableExists(req, res, next) {
     res.locals['table'] = table;
     return next();
   }
-  next({ status: 404, message: "Table cannot be found." });
+  next({ status: 404, message: `Table with id ${table_id} cannot be found.` });
 }
 
 async function validFormat(req, res, next) {
@@ -85,8 +85,7 @@ async function tableOccupied(req, res, next) {
     if(!reservation_id && reservation_id !== 0) {
       return next(
         { status: 400,
-          message: `Table ID ${tableArr['table_id']} does not have a seated` +
-          " reservation."});
+          message: `Table ID ${tableArr['table_id']} not occupied.`});
       }
     return next();
   }
@@ -125,7 +124,7 @@ async function unseat(req, res, next) {
     const { table_id } = req.params;
     tablesService
       .unseat(table_id)
-      .then((data) => res.status(201).json({ data }))
+      .then((data) => res.status(200).json({ data }))
       .catch(next);
   }
 }
