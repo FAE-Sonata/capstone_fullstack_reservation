@@ -9,9 +9,9 @@ const RANGE_TIMES = ["10:30", "21:30"];
 
 async function hasOnlyValidProperties(req, res, next) {
   const { data = {} } = req.body;
-
+  const EXTENDED_VALID = VALID_PROPERTIES.concat("status");
   const invalidFields = Object.keys(data).filter(
-    (field) => !VALID_PROPERTIES.includes(field)
+    (field) => !EXTENDED_VALID.includes(field)
   );
 
   if (invalidFields.length) {
@@ -33,32 +33,25 @@ async function reservationExists(req, res, next) {
   next({ status: 404, message: `Reservation id ${reservation_id} cannot be found.` });
 }
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @param {*} next 
- * @returns a next() with an error if the body status is not one of the 4
- * acceptable options
- */
+/* Validation middleware for PUT (updateStatus) method;
+checks status being updated is valid */
 async function isValidStatus(req, res, next) {
   if(req.body && req.body['data'] && req.body['data']['status']) {
     const newStatus = req.body['data']['status'].trim().toLowerCase();
     if(!VALID_STATUS.includes(newStatus))
-      return next({status: 500,
-        message: `Status must be one of ${VALID_STATUS}`});
+      return next({status: 400, message: `Invalid status: ${newStatus}`});
+    const existing = res.locals['reservation'];
+    if(existing['status'] === "finished" && (newStatus !== "finished"))
+      return next(
+        { status: 400,
+          message: "Cannot alter status for finished reservation (id " + 
+          `${existing['reservation_id']}).`});
     return next();
   }
   next({ status: 400, message: "Request must contain status." });
 }
 
-/**
- * 
- * @param {*} req 
- * @param {*} res 
- * @param {*} next 
- * @returns next() with an error status if any one of the input formats is invalid
- */
+/* Validation middleware for POST (create) method */
 async function validFormat(req, res, next) {
   const attemptedPost = ('data' in req.body) ? (req.body['data']) : (req.body);
   const formPeople = attemptedPost['people'];
@@ -75,6 +68,14 @@ async function validFormat(req, res, next) {
     return next(
       { status: 400,
         message: "'reservation_time' must be in HH:mm format." });
+  // new reservation must have status == booked
+  if('status' in attemptedPost) {
+    const inputStatus = attemptedPost['status'];
+    if(inputStatus.toLowerCase() !== "booked")
+      return next(
+        { status: 400,
+          message: `'status' must be 'booked', was: ${inputStatus}`});
+  }
   next();
 }
 
@@ -121,7 +122,10 @@ async function list(req, res) {
   let data = undefined;
   const selectedDate = req.query['date'];
   const phoneSearch = req.query['mobile_phone'];
-  if(selectedDate) data = await reservationsService.listByDate(selectedDate);
+  if(selectedDate) {
+    data = await reservationsService.listByDate(selectedDate);
+    data = data.filter(x => x['status'] !== "finished");
+  }
   else if(phoneSearch) data = await reservationsService.search(phoneSearch);
   else data = await reservationsService.list();
   res.json({ data });
@@ -150,9 +154,10 @@ async function update(req, res, next) {
 async function updateStatus(req, res, next) {
   if(res.locals['reservation']){
     const { reservation_id } = req.params;
+    const newStatus = req.body['data']['status'];
     reservationsService
-      .updateStatus(reservation_id, req.body['data']['status'])
-      .then((data) => res.status(201).json({ data }))
+      .updateStatus(reservation_id, newStatus)
+      .then(() => res.status(200).json({ data: {status: newStatus} }))
       .catch(next);
   }
 }

@@ -7,7 +7,7 @@ const hasRequired = hasProperties(...VALID_PROPERTIES);
 
 async function hasOnlyValidProperties(req, res, next) {
   const { data = {} } = req.body;
-  const EXTENDED_VALID = ["table_name", "capacity", "people"];
+  const EXTENDED_VALID = VALID_PROPERTIES.concat("people");
   const invalidFields = Object.keys(data).filter(
     (field) => !EXTENDED_VALID.includes(field)
   );
@@ -109,11 +109,27 @@ async function create(req, res, next) {
     .catch(next);
 }
 
+/* similar to findTableWithReservation but to fail if there is a table
+seated with the same reservation_id  */
+async function isNotAlreadySeated(req, res, next) {
+  const { reservation_id } = req.body['data'];
+  const matchingTableId = await tablesService.findTableWithReservation(
+    reservation_id);
+  if(matchingTableId || matchingTableId === 0)
+    return next(
+      { status: 400,
+        message: `Reservation with id ${reservation_id} already seated at` +
+        ` table ${matchingTableId}.` });
+  return next();
+}
+
 async function seat(req, res, next) {
   if(res.locals['table']){
     const { table_id } = req.params;
+    const affectedReservation = req.body.data['reservation_id'];
+    await reservationsService.updateStatus(affectedReservation, "seated");
     tablesService
-      .seat(table_id, req.body.data['reservation_id'])
+      .seat(table_id, affectedReservation)
       .then((data) => res.status(200).json({ data }))
       .catch(next);
   }
@@ -122,6 +138,8 @@ async function seat(req, res, next) {
 async function unseat(req, res, next) {
   if(res.locals['table']){
     const { table_id } = req.params;
+    const affectedReservation = req.body.data['reservation_id'];
+    await reservationsService.updateStatus(affectedReservation, "finished");
     tablesService
       .unseat(table_id)
       .then((data) => res.status(200).json({ data }))
@@ -158,8 +176,8 @@ module.exports = {
   list,
   create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired,
     asyncErrorBoundary(validFormat), create],
-  seat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(isValidSeating),
-    seat],
+  seat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(isNotAlreadySeated),
+    asyncErrorBoundary(isValidSeating), seat],
   unseat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(tableOccupied),
     unseat],
   findTableWithReservation: [asyncErrorBoundary(hasValidStatus),
