@@ -1,9 +1,7 @@
 // import moment from "moment";
 import React, { useEffect, useState } from "react";
-import { useHistory, useParams, useRouteMatch } from "react-router";
+import { useHistory, useParams } from "react-router";
 import { RANGE_TIMES,
-  earliestHour,
-  latestHour,
   getOpenOn,
   getCloseOn,
   getFirstTopHour } from "../utils/additional-time-functions";
@@ -21,68 +19,65 @@ function padInt(x) {
 }
 
 function ReservationForm({isNew = true}) {
-  const { urmUrl } = useRouteMatch();
+  // const { urmUrl } = useRouteMatch();
   const history = useHistory();
   const { reservation_id } = useParams();
   const [clientErrors, setClientErrors] = useState({});
   const [reservationErrors, setReservationErrors] = useState(null);
   let DEFAULT_FORM_TIME = getFirstTopHour();
-  const DEFAULT_YEAR = DEFAULT_FORM_TIME.getFullYear();
 
   const initialFormState = {
     first_name: "", last_name: "",
     mobile_number: "(123) 456-7890",
-    // reservation_date: today(),
     people: 1,
-    // errors: {},
+    reservation_date: [DEFAULT_FORM_TIME.getFullYear(),
+      padInt(DEFAULT_FORM_TIME.getMonth()+1),
+      padInt(DEFAULT_FORM_TIME.getDate())].join("-"),
+    reservation_time: [padInt(DEFAULT_FORM_TIME.getHours()),
+      padInt(DEFAULT_FORM_TIME.getMinutes())].join(":")
   };
-  const initialDateFields = {
-    year: DEFAULT_YEAR,
-    month: DEFAULT_FORM_TIME.getMonth() + 1,
-    day: DEFAULT_FORM_TIME.getDate(),
-  }
-  const initialTimeFields = {
-    hour: padInt(DEFAULT_FORM_TIME.getHours()),
-    minute: padInt(DEFAULT_FORM_TIME.getMinutes()),
-  }
   const [formData, setFormData] = useState({ ...initialFormState });
-  
-  const [dateFields, setDateFields] = useState({...initialDateFields});
-  const [timeFields, setTimeFields] = useState({...initialTimeFields});
 
   async function loadReservation() {
     if(!isNew && (reservation_id || reservation_id === 0)) {
       const TIME_AT_LOAD = new Date();
       const abortController = new AbortController();
       const updateFields = (reservation) => {
-        setFormData({
+        let populatedForm = {
           first_name: reservation['first_name'],
           last_name: reservation['last_name'],
           mobile_number: reservation['mobile_number'],
           people: reservation['people'],
-        });
+        };
         const existingTime = new Date(
           `${reservation['reservation_date']} ` +
           `${reservation['reservation_time']}`);
         if(existingTime > TIME_AT_LOAD) {
-          setDateFields({
-            year: existingTime.getFullYear(),
-            month: existingTime.getMonth() + 1,
-            day: existingTime.getDate(),
-          });
-          setTimeFields({
-            hour: existingTime.getHours(),
-            minute: existingTime.getMinutes(),
-          });
+          // const {reservation_date, reservation_time, ...other} = formData;
+          populatedForm['reservation_date'] = reservation['reservation_date'];
+          populatedForm['reservation_time'] = reservation['reservation_time'];
+          setFormData({...populatedForm});
+          // setDateFields({
+          //   year: existingTime.getFullYear(),
+          //   month: existingTime.getMonth() + 1,
+          //   day: existingTime.getDate(),
+          // });
+          // setTimeFields({
+          //   hour: existingTime.getHours(),
+          //   minute: existingTime.getMinutes(),
+          // });
+        }
+        else {
+          populatedForm['reservation_date'] = formData['reservation_date'];
+          populatedForm['reservation_time'] = formData['reservation_time'];
+          setFormData({...populatedForm});
         }
       }
       try {
         const reservationResponse = await readReservation(reservation_id,
           abortController.signal);
-        // const resObj = reservationResponse[0];
         if(Object.keys(reservationResponse).length > 0)
           updateFields(reservationResponse);
-        // if(existingTime > TIME_AT_LOAD) setTimeObj(existingTime);
       }
       catch(error) {
         setReservationErrors(error);
@@ -119,86 +114,26 @@ function ReservationForm({isNew = true}) {
         RANGE_TIMES[0] + " and " + RANGE_TIMES[1] + ", inclusive.");
       return false;
     }
+    if(formTime.getDay() === 2) {
+      setTimeErrors('Tuesday', "Invalid: Restaurant closed on Tuesdays");
+      return false;
+    }
     return true;
   }
-
-  const handleDate = ({ target }) => {
-    // moment()
-    setClientErrors({});
-    const dateErrors = {};
-    const field = target.name;
-    const input = parseInt(target.value);
-    const CURRENT_TIME = new Date();
-    const CURRENT_DATE_OBJ = new Date(CURRENT_TIME.getFullYear(),
-      CURRENT_TIME.getMonth(),
-      CURRENT_TIME.getDate());
-    
-    const setDateErrors = (type, message) => {
-      dateErrors[type] = message;
-      setClientErrors(dateErrors);
-    }
-    let builtDateObj = undefined;
-    const yearForm = dateFields['year'];
-    const monthForm = parseInt(dateFields['month']);
-    const dayForm = parseInt(dateFields['day']);
-    switch(field) {
-      case "year":
-        builtDateObj = new Date(input, monthForm-1, dayForm);
-        break;
-      case "month":
-        builtDateObj = new Date(yearForm, input-1, dayForm);
-        break;
-      case "day":
-        builtDateObj = new Date(yearForm, monthForm-1, input);
-        break;
-      default:
-        setDateErrors('invalid_field', "Invalid field");
-        return;
-    }
-    /* check invalid date, e.g. "30 February" or "29 February 2011" */
-    if((field === "day" && builtDateObj.getMonth()+1 !== monthForm) || (
-      field === "month" && builtDateObj.getDate() !== dayForm) || (
-        field === "year" && builtDateObj.getDate() !== dayForm)) {
-          setDateErrors('date',
-            "Invalid date: Month does not have that many days");
-          return;
-        }
-    if(builtDateObj < CURRENT_DATE_OBJ) {
-      setDateErrors('date',
-        "Invalid date: Reservation must be on or after today");
-      return;
-    }
-    if(builtDateObj.getDay() === 2) {
-      setDateErrors('Tuesday', "Invalid: Restaurant closed on Tuesdays");
-      return;
-    }
-    setDateFields({
-      ...dateFields,
-      [field]: target.value,
-    });
-  };
 
   const handleTime = ({ target }) => {
     setClientErrors({});
     const field = target.name;
-    const input = parseInt(target.value);
+    const input = target.value;
 
     const CURRENT_TIME = new Date();
-    const FORM_YEAR = dateFields['year'];
-    const FORM_MONTH = parseInt(dateFields['month'])-1;
-    const FORM_DAY = parseInt(dateFields['day']);
-    
     let builtTime = undefined;
-    const hourForm = parseInt(timeFields['hour']);
-    const minuteForm = parseInt(timeFields['minute']);
     switch(field) {
-      case "hour":
-        builtTime = new Date(FORM_YEAR, FORM_MONTH, FORM_DAY,
-          input, minuteForm);
+      case "reservation_date":
+        builtTime = new Date([input, formData['reservation_time']].join(" "));
         break;
-      case "minute":
-        builtTime = new Date(FORM_YEAR, FORM_MONTH, FORM_DAY,
-          hourForm, input);
+      case "reservation_time":
+        builtTime = new Date([formData['reservation_date'], input].join(" "));
         break;
       default:
         setTimeErrors('invalid_field', "Invalid field");
@@ -206,10 +141,10 @@ function ReservationForm({isNew = true}) {
     }
     if(!isValidTime(CURRENT_TIME, builtTime)) return;
     
-    setTimeFields({
-      ...timeFields,
-      [field]: target.value,
-    });
+    setFormData({
+      ...formData,
+      [field]: input,
+    })
   };
 
   const handlePhone = ({ target }) => {
@@ -233,8 +168,8 @@ function ReservationForm({isNew = true}) {
     event.preventDefault();
     serverError = {};
     setClientErrors({});
-    if(!(timeFields['hour'] && timeFields['minute'])) {
-      setClientErrors({'missing': "One or both time field(s) (hour, minute) missing."});
+    if(!(formData['reservation_date'] && formData['reservation_time'])) {
+      setClientErrors({'missing': "One or both of 'reservation_date' and 'reservation_time' missing."});
       return;
     }
     if(formData['people'] < 1 || formData['people'] % 1) {
@@ -242,26 +177,18 @@ function ReservationForm({isNew = true}) {
       return;
     }
 
-    const {errors, ...mid} = formData;
-    const strMonth = String(dateFields['month']);
-    const strDay = String(dateFields['day']);
-    const strHour = String(timeFields['hour']);
-    const strMinute = String(timeFields['minute']);
-
-    const ymd = [`${dateFields['year']}`,
-      `${strMonth.padStart(2, "0")}`,
-      `${strDay.padStart(2, "0")}`].join("-");
-    const hms = [`${strHour.padStart(2, "0")}`,
-      `${strMinute.padStart(2, "0")}`, "00"].join(":");
+    let mid = formData;
+    const ymd = formData['reservation_date'];
+    // const hms = [formData['reservation_time'], "00"].join(":");
     // delete submitForm['errors'];
     const teleRe = new RegExp(/[\-()\s]/g);
     const rawTele = mid['mobile_number'].replaceAll(teleRe, "");
+    // using mid so formData is NOT modified in-place for these 2 fields
     mid['mobile_number'] = [rawTele.substr(0,3),
       rawTele.substr(3,3),
       rawTele.substr(6,4)].join("-");
-    mid['reservation_date'] = ymd;
-    mid['reservation_time'] = hms;
-    const {hour, minute, ...submitForm} = mid;
+    // mid['reservation_time'] = hms;
+    let submitForm = mid;
     submitForm['people'] = parseInt(mid['people']);
 
     const headers = new Headers();
@@ -359,84 +286,34 @@ function ReservationForm({isNew = true}) {
         </div>
       </label>
       <br/>
-      {/* ONLY allow reservations thru the end of the next calendar year */}
-      <label htmlFor="year">
-          Reservation date (year):
-          <select
-              id="year"
-              name="year"
-              onChange={handleDate}
-              value={dateFields['year']}
-          >
-          <option value={DEFAULT_YEAR}>{DEFAULT_YEAR}</option>
-          <option value={DEFAULT_YEAR+1}>{DEFAULT_YEAR+1}</option>
-          </select>
-      </label>
-      <br />
-      <label htmlFor="month">
-        Reservation date (month):
+      <label htmlFor="reservation_date">
+        Date bootstrap form:
         <input
-          id="month"
-          type="number"
-          name="month"
-          min="1"
-          max="12"
-          onChange={handleDate}
-          value={dateFields['month']}
-        />
-      </label>
-      <br />
-      <label htmlFor="day">
-        Reservation date (day):
-        <input
-          id="day"
-          type="number"
-          name="day"
-          min="1"
-          max="31"
-          onChange={handleDate}
-          value={dateFields['day']}
-        />
-        <div className="alert alert-danger" hidden={!('date' in
-          clientErrors)}>
-            {clientErrors['date']}
-        </div>
-        <div className="alert alert-danger" hidden={!('Tuesday' in
-          clientErrors)}>
-            {clientErrors['Tuesday']}
-        </div>
-      </label>
-      <br />
-      <label htmlFor="hour">
-        Reservation time (hour):
-        <input
-          id="hour"
-          type="number"
-          name="hour"
-          min={padInt(earliestHour())}
-          max={latestHour()}
+          id="reservation_date"
+          type="date"
+          name="reservation_date"
+          required
           onChange={handleTime}
-          value={timeFields['hour']}
+          value={formData['reservation_date']}
         />
       </label>
-      <br />
-      <label htmlFor="minute">
-        Reservation time (minute):
+      <br/>
+      <label htmlFor="reservation_time">
+        Time bootstrap form:
         <input
-          id="minute"
-          type="number"
-          name="minute"
-          min="0"
-          max="59"
+          id="reservation_time"
+          type="time"
+          name="reservation_time"
+          required
           onChange={handleTime}
-          value={timeFields['minute']}
+          value={formData['reservation_time']}
         />
-        <div className="alert alert-danger" hidden={!('time' in
-          clientErrors)}>
-            {clientErrors['time']}
+        <div className="alert alert-danger"
+          hidden={!('time' in clientErrors || 'Tuesday' in clientErrors)}>
+            {clientErrors['time'] || clientErrors['Tuesday']}
         </div>
       </label>
-      <br />
+      <br/>
       <label htmlFor="people">
         Number of people in reservation:
         <input
@@ -458,7 +335,6 @@ function ReservationForm({isNew = true}) {
       <button type="submit" disabled={!(formData['first_name'].length &&
         formData['last_name'].length && formData['people'])}
         onClick={handleSubmit}>Submit</button>
-      {/* <button type="submit" onClick={handleSubmit}>Submit</button> */}
       <button onClick={(event) => {
         event.preventDefault();
         history.goBack(2);
