@@ -71,7 +71,8 @@ async function validFormat(req, res, next) {
   // new reservation must have status == booked
   if('status' in attemptedPost) {
     const inputStatus = attemptedPost['status'];
-    if(inputStatus.toLowerCase() !== "booked")
+    // will satisfy 1st loop if status == null
+    if(inputStatus && inputStatus.toLowerCase() !== "booked")
       return next(
         { status: 400,
           message: `'status' must be 'booked', was: ${inputStatus}`});
@@ -148,7 +149,7 @@ async function update(req, res, next) {
   branch */
   const updatedReservation = req.body['data'];
   const data = await reservationsService.update(updatedReservation);
-  res.json({ data });
+  res.json({ data: data[0] });
 }
 
 async function updateStatus(req, res, next) {
@@ -167,7 +168,9 @@ module.exports = {
   create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired,
     asyncErrorBoundary(validFormat), asyncErrorBoundary(validTime), create],
   read: [asyncErrorBoundary(reservationExists), read],
-  update: [asyncErrorBoundary(reservationExists), asyncErrorBoundary(update)],
+  update: [asyncErrorBoundary(reservationExists), hasRequired,
+    asyncErrorBoundary(validFormat), asyncErrorBoundary(validTime),
+    asyncErrorBoundary(update)],
   updateStatus: [asyncErrorBoundary(reservationExists),
     asyncErrorBoundary(isValidStatus), updateStatus],
 };

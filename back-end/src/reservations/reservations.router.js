@@ -17,7 +17,7 @@ router
   .get(controller['read'])
   .put(controller['update'])
   .all(methodNotAllowed);
-  router
+router
   .route("/:reservation_id([0-9]+)/status") // only allow digits for input
   .put(controller['updateStatus'])
   .all(methodNotAllowed);
