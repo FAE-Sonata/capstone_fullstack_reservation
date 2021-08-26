@@ -101,6 +101,11 @@ function ReservationForm({isNew = true}) {
   };
 
   function isValidTime(currentTime, formTime) {
+    if(!formTime) {
+      setTimeErrors('time',
+        "Invalid time format.");
+      return false;
+    }
     if(formTime <= currentTime) {
       setTimeErrors('time',
         "Invalid time: Reservation start time must be in the future");
@@ -127,13 +132,33 @@ function ReservationForm({isNew = true}) {
     const input = target.value;
 
     const CURRENT_TIME = new Date();
-    let builtTime = undefined;
+    let builtTime = undefined; let inputSplit = undefined;
+    // debugger;
     switch(field) {
       case "reservation_date":
-        builtTime = new Date([input, formData['reservation_time']].join(" "));
+        if(!input || toString(input).charAt(0) === "0") {
+          setTimeErrors('time', "Year cannot lead with 0");
+          return;
+        }
+        inputSplit = input.split("-");
+        const timeSplit = toString(formData['reservation_time']).split(":");
+        builtTime = new Date(parseInt(inputSplit[0]),
+          parseInt(inputSplit[1])-1,
+          parseInt(inputSplit[2]),
+          parseInt(timeSplit[0]),
+          parseInt(timeSplit[1]));
+        // builtTime = new Date([input, formData['reservation_time']].join(" "));
         break;
       case "reservation_time":
-        builtTime = new Date([formData['reservation_date'], input].join(" "));
+        // debugger;
+        const dateSplit = toString(formData['reservation_date']).split("-");
+        inputSplit = input.split(":");
+        builtTime = new Date(parseInt(dateSplit[0]),
+          parseInt(dateSplit[1])-1,
+          parseInt(dateSplit[2]),
+          parseInt(inputSplit[0]),
+          parseInt(inputSplit[1]));
+        // builtTime = new Date([formData['reservation_date'], input].join(" "));
         break;
       default:
         setTimeErrors('invalid_field', "Invalid field");
@@ -287,7 +312,7 @@ function ReservationForm({isNew = true}) {
       </label>
       <br/>
       <label htmlFor="reservation_date">
-        Date bootstrap form:
+        Date form:
         <input
           id="reservation_date"
           type="date"
@@ -299,7 +324,7 @@ function ReservationForm({isNew = true}) {
       </label>
       <br/>
       <label htmlFor="reservation_time">
-        Time bootstrap form:
+        Time form:
         <input
           id="reservation_time"
           type="time"
