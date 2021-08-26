@@ -18,6 +18,21 @@ function padInt(x) {
   return x.toString().padStart(2, "0");
 }
 
+function timeToStr(timeObj) {
+  const ymd = [timeObj.getFullYear(),
+    timeObj.getMonth()+1,
+    timeObj.getDate()].join("-");
+  const hm = [timeObj.getHours(), timeObj.getMinutes()].join(":");
+  return [ymd, hm].join(" ");
+}
+
+function constructDateObj(date, time) {
+  const dateSplit = date.split("-");
+  const timeSplit = time.split(":");
+  return new Date(parseInt(dateSplit[0]), parseInt(dateSplit[1])-1,
+    parseInt(dateSplit[2]), parseInt(timeSplit[0]), parseInt(timeSplit[1]));
+}
+
 function ReservationForm({isNew = true}) {
   // const { urmUrl } = useRouteMatch();
   const history = useHistory();
@@ -57,15 +72,6 @@ function ReservationForm({isNew = true}) {
           populatedForm['reservation_date'] = reservation['reservation_date'];
           populatedForm['reservation_time'] = reservation['reservation_time'];
           setFormData({...populatedForm});
-          // setDateFields({
-          //   year: existingTime.getFullYear(),
-          //   month: existingTime.getMonth() + 1,
-          //   day: existingTime.getDate(),
-          // });
-          // setTimeFields({
-          //   hour: existingTime.getHours(),
-          //   minute: existingTime.getMinutes(),
-          // });
         }
         else {
           populatedForm['reservation_date'] = formData['reservation_date'];
@@ -132,32 +138,19 @@ function ReservationForm({isNew = true}) {
     const input = target.value;
 
     const CURRENT_TIME = new Date();
-    let builtTime = undefined; let inputSplit = undefined;
+    let builtTime = undefined;
     // debugger;
     switch(field) {
       case "reservation_date":
-        if(!input || toString(input).charAt(0) === "0") {
-          setTimeErrors('time', "Year cannot lead with 0");
+        if(!input /*|| input.charAt(0) === "0"*/) {
+          setTimeErrors('time', "Invalid date format, and/or year cannot lead with 0");
           return;
         }
-        inputSplit = input.split("-");
-        const timeSplit = toString(formData['reservation_time']).split(":");
-        builtTime = new Date(parseInt(inputSplit[0]),
-          parseInt(inputSplit[1])-1,
-          parseInt(inputSplit[2]),
-          parseInt(timeSplit[0]),
-          parseInt(timeSplit[1]));
+        builtTime = constructDateObj(input, formData['reservation_time']);
         // builtTime = new Date([input, formData['reservation_time']].join(" "));
         break;
       case "reservation_time":
-        // debugger;
-        const dateSplit = toString(formData['reservation_date']).split("-");
-        inputSplit = input.split(":");
-        builtTime = new Date(parseInt(dateSplit[0]),
-          parseInt(dateSplit[1])-1,
-          parseInt(dateSplit[2]),
-          parseInt(inputSplit[0]),
-          parseInt(inputSplit[1]));
+        builtTime = constructDateObj(formData['reservation_date'], input);
         // builtTime = new Date([formData['reservation_date'], input].join(" "));
         break;
       default:
@@ -201,10 +194,13 @@ function ReservationForm({isNew = true}) {
       setClientErrors({'people': "People field must be a strictly positive integer."});
       return;
     }
+    const CURRENT_TIME = new Date();
+    if(!isValidTime(CURRENT_TIME, constructDateObj(formData['reservation_date'],
+      formData['reservation_time'])))
+      return;
 
     let mid = formData;
     const ymd = formData['reservation_date'];
-    // const hms = [formData['reservation_time'], "00"].join(":");
     // delete submitForm['errors'];
     const teleRe = new RegExp(/[\-()\s]/g);
     const rawTele = mid['mobile_number'].replaceAll(teleRe, "");
