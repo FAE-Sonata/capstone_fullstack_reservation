@@ -111,8 +111,13 @@ async function create(req, res, next) {
 
 /* similar to findTableWithReservation but to fail if there is a table
 seated with the same reservation_id  */
-async function isNotAlreadySeated(req, res, next) {
+async function notAlreadySeated(req, res, next) {
+  const malformed = "Seating object must conform to {data: reservation_id} format.";
+  if(!req.body['data'])
+    return next({ status: 400, message: malformed });
   const { reservation_id } = req.body['data'];
+  if(!(reservation_id || reservation_id === 0))
+    return next({ status: 400, message: malformed });
   const matchingTableId = await tablesService.findTableWithReservation(
     reservation_id);
   if(matchingTableId || matchingTableId === 0)
@@ -176,7 +181,7 @@ module.exports = {
   list,
   create: [asyncErrorBoundary(hasOnlyValidProperties), hasRequired,
     asyncErrorBoundary(validFormat), create],
-  seat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(isNotAlreadySeated),
+  seat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(notAlreadySeated),
     asyncErrorBoundary(isValidSeating), seat],
   unseat: [asyncErrorBoundary(tableExists), asyncErrorBoundary(tableOccupied),
     unseat],
