@@ -7,7 +7,7 @@ const hasRequired = hasProperties(...VALID_PROPERTIES);
 
 async function hasOnlyValidProperties(req, res, next) {
   const { data = {} } = req.body;
-  const EXTENDED_VALID = VALID_PROPERTIES.concat("people");
+  const EXTENDED_VALID = VALID_PROPERTIES.concat(["people", "reservation_id"]);
   const invalidFields = Object.keys(data).filter(
     (field) => !EXTENDED_VALID.includes(field)
   );
