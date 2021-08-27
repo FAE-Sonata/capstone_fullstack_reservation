@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { useHistory } from "react-router";
 import { postTable } from "../utils/api";
+import ErrorAlert from "./ErrorAlert";
 
 function TableForm() {
   const history = useHistory();
   const initialFormState = {
     table_name: "",
-    capacity: 1,
+    capacity: "",
   };
-  const [formErrors, setFormErrors] = useState({});
+  const [formErrors, setFormErrors] = useState(null);
   const [tableErrors, setTableErrors] = useState({});
   const [formData, setFormData] = useState({ ...initialFormState });
   
@@ -19,9 +20,21 @@ function TableForm() {
     });
   };
 
+  const setMessage = (message) => {
+    setFormErrors({message});
+  };
+
   async function handleSubmit(event) {
     event.preventDefault();
-    setFormErrors({}); setTableErrors({});
+    setTableErrors({});
+    if(formData['table_name'].length < 2) {
+      setMessage("'table_name' must be at least 2 characters.")
+      return;
+    }
+    if(!parseInt(formData['capacity'])) {
+      setMessage("'capacity' must be a strictly positive integer.");
+      return;
+    }
     let submitForm = {
       table_name: formData['table_name'],
       capacity: parseInt(formData['capacity']),
@@ -50,7 +63,7 @@ function TableForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form>
       <label htmlFor="table_name">
         Enter table name:
         <input
@@ -79,9 +92,10 @@ function TableForm() {
         </div> */}
       </label>
       <br/>
-      <button type="submit" disabled={!formData['table_name'].length ||
-        !parseInt(formData['capacity'])}>Submit</button>
-      {/* <button type="submit">Submit</button> */}
+      <ErrorAlert error={formErrors}/>
+      {/* <button type="submit" disabled={!formData['table_name'].length() ||
+        !parseInt(formData['capacity'])}>Submit</button> */}
+      <button type="submit" onClick={handleSubmit}>Submit</button>
       <button onClick={() => history.goBack()}>Cancel</button>
     </form>
   );
