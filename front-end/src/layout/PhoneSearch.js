@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useHistory } from "react-router";
 import DashboardReservations from "../dashboard/DashboardReservations";
 import { listReservations } from "../utils/api";
+import ErrorAlert from "./ErrorAlert";
 
 function PhoneSearch() {
   const history = useHistory();
@@ -10,30 +11,31 @@ function PhoneSearch() {
   const [clickedFind, setClickedFind] = useState(false);
   const [reservations, setReservations] = useState([]);
   const [reservationsError, setReservationsError] = useState(null);
-  const [inputError, setInputError] = useState("");
+  const [inputError, setInputError] = useState(null);
+
+  const setMessage = (message) => {
+    setInputError({ message });
+  }
 
   const handlePhone = ({ target }) => {
-    setInputError("");
+    setInputError(null);
     const input = target.value.trim();
     const phoneRegex = new RegExp(/^\(?\s*\d{0,3}\s*\)?\s*\-?\s*\d{0,3}\s*\-?\s*\d{0,4}$/);
-    if(phoneRegex.test(input)) {
-      setSearchTerm(input);
-    }
-    else {
-      setInputError("Invalid mobile number format");
-    }
+    if(phoneRegex.test(input)) setSearchTerm(input);
+    else setMessage("Invalid mobile number format");
   };
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     setClickedFind(true);
-    setInputError("");
     setReservationsError(null);
+    history.push(`/search?mobile_number=${searchTerm}`);
     
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
     const abortController = new AbortController();
-    listReservations({ 'mobile_phone': searchTerm }, abortController.signal)
+    const sentParams = { 'mobile_number': searchTerm }; // { 'mobile_phone': searchTerm }
+    await listReservations(sentParams, abortController.signal)
       .then(setReservations)
       .catch(setReservationsError);
   };
@@ -54,9 +56,10 @@ function PhoneSearch() {
           onClick={handleSubmit}>Find</button>
         {/* <button onClick={() => history.goBack()}>Cancel</button> */}
         <br/>
-        <div className="alert alert-danger" hidden={!inputError.length}>
+        <ErrorAlert error={inputError}/>
+        {/* <div className="alert alert-danger" hidden={!inputError.length}>
           {inputError}
-        </div>
+        </div> */}
         <br/>
         {(clickedFind) ? (<DashboardReservations arrReservations={reservations}
           reservationsError={reservationsError}
