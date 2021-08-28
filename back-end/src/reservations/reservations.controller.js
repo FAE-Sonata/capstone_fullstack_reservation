@@ -134,6 +134,7 @@ async function list(req, res) {
 
 async function create(req, res, next) {
   let sent = ('data' in req.body) ? (req.body['data']) : (req.body);
+  sent['status'] = "booked";
   reservationsService
     .create(sent)
     .then((data) => res.status(201).json({ data }))
