@@ -7,7 +7,6 @@ function Seat() {
   const history = useHistory();
   const { reservation_id } = useParams(); // reservations/:reservation_id/seat
 
-  const [reservation, setReservation] = useState({});
   const [reservationSize, setReservationSize] = useState(undefined);
   const [tables, setTables] = useState([]);
   const [formErrors, setFormErrors] = useState(null);
@@ -21,7 +20,6 @@ function Seat() {
       try {
         const reservationResponse = await readReservation(reservation_id,
           abortController.signal);
-        setReservation(reservationResponse);
         setReservationSize(reservationResponse['people']);
         const tablesResponse = await listTables(abortController.signal);
         setTables(tablesResponse);
@@ -72,8 +70,7 @@ function Seat() {
     if(selectElem && Object.keys(selectElem).length) {
       for(let k = 0; k < selectElem.options.length; k++) {
         const thisOption = selectElem.options[k];
-        // debugger;
-        if(thisOption.selected) {//return thisOption.value;
+        if(thisOption.selected) {
           return {
             table_id: thisOption.value,
             capacity: parseInt(thisOption["attributes"]["data-capacity"][

@@ -51,8 +51,10 @@ function DashboardReservations({arrReservations, reservationsError,
                 <td>{reservation_date}</td>
                 <td>{reservation_time}</td>
                 <td>{people}</td>
-                <td><a href={`/reservations/${reservation_id}/seat`}
-                    hidden={status !== "booked"}>Seat</a></td>
+                {/* <td><a href={`/reservations/${reservation_id}/seat`}
+                    hidden={status !== "booked"}>Seat</a></td> */}
+                <td> {(status === "booked") ? (
+                  <a href={`/reservations/${reservation_id}/seat`}>Seat</a>): ""}</td>
                 <td data-reservation-id-status={reservation_id}>{status}</td>
                 <td><a href={`/reservations/${reservation_id}/edit`}
                   hidden={status !== "booked"}>Edit</a></td>
