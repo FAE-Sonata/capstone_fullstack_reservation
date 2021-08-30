@@ -97,16 +97,10 @@ async function validTime(req, res, next) {
         message: "reservation date cannot be on a Tuesday; restaurant is " +
         "closed on Tuesdays." });
   }
-  const postDateSplit = attemptedPost['reservation_date'].split("-");
-  const postYear = parseInt(postDateSplit[0]);
-  const postMonth = parseInt(postDateSplit[1])-1;
-  const postDay = parseInt(postDateSplit[2]);
-  const EARLIEST_SPLIT = RANGE_TIMES[0].split(":").map(x => parseInt(x));
-  const EARLIEST_TIME = new Date(postYear, postMonth, postDay,
-    EARLIEST_SPLIT[0], EARLIEST_SPLIT[1]);
-  const LATEST_SPLIT = RANGE_TIMES[1].split(":").map(x => parseInt(x));
-  const LATEST_TIME = new Date(postYear, postMonth, postDay, LATEST_SPLIT[0],
-    LATEST_SPLIT[1]);
+  const EARLIEST_TIME = new Date(`${attemptedPost['reservation_date']} ` +
+    `${RANGE_TIMES[0]}`);
+  const LATEST_TIME = new Date(`${attemptedPost['reservation_date']} ` +
+    `${RANGE_TIMES[1]}`);
 
   if(postTimeObj < EARLIEST_TIME || postTimeObj > LATEST_TIME) {
       return next({ status: 400,

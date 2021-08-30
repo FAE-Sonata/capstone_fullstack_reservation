@@ -55,10 +55,7 @@ function TableForm() {
           }
           else return res.json();
         });
-    if(Object.keys(tableErrors).length > 0){ 
-      // console.log("POST FETCH formData has errors");
-      return;
-    }
+    if(Object.keys(tableErrors).length > 0) return;
     history.push(`../../`);
   };
 
@@ -87,14 +84,9 @@ function TableForm() {
           value={formData['capacity']}
           required
         />
-        {/* <div className="alert alert-danger" hidden={!Object.keys(tableErrors).length}>
-            {tableErrors}
-        </div> */}
       </label>
       <br/>
       <ErrorAlert error={formErrors}/>
-      {/* <button type="submit" disabled={!formData['table_name'].length() ||
-        !parseInt(formData['capacity'])}>Submit</button> */}
       <button type="submit" onClick={handleSubmit}>Submit</button>
       <button onClick={() => history.goBack()}>Cancel</button>
     </form>

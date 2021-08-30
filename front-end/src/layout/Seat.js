@@ -8,6 +8,7 @@ function Seat() {
   const { reservation_id } = useParams(); // reservations/:reservation_id/seat
 
   const [reservationSize, setReservationSize] = useState(undefined);
+  const [reservationDate, setReservationDate] = useState(undefined);
   const [tables, setTables] = useState([]);
   const [formErrors, setFormErrors] = useState(null);
   // const [hasAvailable, setHasAvailable] = useState(true);
@@ -21,6 +22,7 @@ function Seat() {
         const reservationResponse = await readReservation(reservation_id,
           abortController.signal);
         setReservationSize(reservationResponse['people']);
+        setReservationDate(reservationResponse['reservation_date']);
         const tablesResponse = await listTables(abortController.signal);
         setTables(tablesResponse);
       }
@@ -100,7 +102,7 @@ function Seat() {
         abortController.signal)
         .then((res) => res.json())
         .catch(setServerErrors);
-      history.push(`../../dashboard`);
+      history.push(`../../dashboard?date=${reservationDate}`);
       window.location.reload();
       return;
     }
