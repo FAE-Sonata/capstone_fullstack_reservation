@@ -5,8 +5,8 @@ import { RANGE_TIMES,
   getOpenOn,
   getCloseOn,
   getFirstTopHour } from "../utils/additional-time-functions";
-import { postReservation, readReservation, updateReservation,
-  updateStatus } from "../utils/api";
+import { postReservation, readReservation, updateReservation } from "../utils/api";
+import ErrorAlert from "./ErrorAlert";
 let serverError = {};
 
 /**
@@ -31,13 +31,14 @@ function constructDateObj(date, time) {
   const timeSplit = time.split(":");
   return new Date(parseInt(dateSplit[0]), parseInt(dateSplit[1])-1,
     parseInt(dateSplit[2]), parseInt(timeSplit[0]), parseInt(timeSplit[1]));
+  // return new Date(`${date}T${time}`);
 }
 
 function ReservationForm({isNew = true}) {
   // const { urmUrl } = useRouteMatch();
   const history = useHistory();
   const { reservation_id } = useParams();
-  const [clientErrors, setClientErrors] = useState({});
+  const [clientErrors, setClientErrors] = useState(null);
   const [reservationErrors, setReservationErrors] = useState(null);
   let DEFAULT_FORM_TIME = getFirstTopHour();
 
@@ -95,11 +96,12 @@ function ReservationForm({isNew = true}) {
 
   useEffect(loadReservation, [isNew, reservation_id]);
 
-  const setTimeErrors = (type, message) => {
-    let timeErrors = {[type]: message};
-    setClientErrors(timeErrors);
+  const setMessage = (message) => {
+    setClientErrors({message});
   }
+  
   const handleChange = ({ target }) => {
+    setClientErrors(null);
     setFormData({
       ...formData,
       [target.name]: target.value,
@@ -107,67 +109,65 @@ function ReservationForm({isNew = true}) {
   };
 
   function isValidTime(currentTime, formTime) {
-    if(!formTime) {
-      setTimeErrors('time',
-        "Invalid time format.");
+    console.log(`current time: ${timeToStr(currentTime)}`);
+    console.log(`form time: ${timeToStr(formTime)}`);
+    if(!formTime || !formTime.getFullYear()) {
+      setMessage("Invalid time format.");
       return false;
     }
     if(formTime <= currentTime) {
-      setTimeErrors('time',
-        "Invalid time: Reservation start time must be in the future");
+      setMessage("Invalid time: Reservation start time must be in the future");
       return false;
     }
     const EARLIEST_TIME = getOpenOn(formTime);
     const LATEST_TIME = getCloseOn(formTime);
     if(formTime < EARLIEST_TIME || formTime > LATEST_TIME) {
-      setTimeErrors('time',
-        "Invalid time: Reservation start time must be between " +
+      setMessage("Invalid time: Reservation start time must be between " +
         RANGE_TIMES[0] + " and " + RANGE_TIMES[1] + ", inclusive.");
       return false;
     }
     if(formTime.getDay() === 2) {
-      setTimeErrors('Tuesday', "Invalid: Restaurant closed on Tuesdays");
+      setMessage("Invalid: Restaurant closed on Tuesdays");
       return false;
     }
     return true;
   }
 
-  const handleTime = ({ target }) => {
-    setClientErrors({});
-    const field = target.name;
-    const input = target.value;
+  // const handleTime = ({ target }) => {
+  //   setClientErrors(null);
+  //   const field = target.name;
+  //   const input = target.value;
 
-    const CURRENT_TIME = new Date();
-    let builtTime = undefined;
-    // debugger;
-    switch(field) {
-      case "reservation_date":
-        if(!input /*|| input.charAt(0) === "0"*/) {
-          setTimeErrors('time', "Invalid date format, and/or year cannot lead with 0");
-          return;
-        }
-        builtTime = constructDateObj(input, formData['reservation_time']);
-        // builtTime = new Date([input, formData['reservation_time']].join(" "));
-        break;
-      case "reservation_time":
-        builtTime = constructDateObj(formData['reservation_date'], input);
-        // builtTime = new Date([formData['reservation_date'], input].join(" "));
-        break;
-      default:
-        setTimeErrors('invalid_field', "Invalid field");
-        return;
-    }
-    if(!isValidTime(CURRENT_TIME, builtTime)) return;
+  //   const CURRENT_TIME = new Date();
+  //   let builtTime = undefined;
+  //   switch(field) {
+  //     case "reservation_date":
+  //       if(!input /*|| input.charAt(0) === "0"*/) {
+  //         console.log("INPUT WAS: ", input);
+  //         setMessage("Invalid date format, and/or year cannot lead with 0");
+  //         return;
+  //       }
+  //       builtTime = constructDateObj(input, formData['reservation_time']);
+  //       // builtTime = new Date([input, formData['reservation_time']].join(" "));
+  //       break;
+  //     case "reservation_time":
+  //       builtTime = constructDateObj(formData['reservation_date'], input);
+  //       // builtTime = new Date([formData['reservation_date'], input].join(" "));
+  //       break;
+  //     default:
+  //       setMessage("Invalid time field");
+  //       return;
+  //   }
+  //   if(!isValidTime(CURRENT_TIME, builtTime)) return;
     
-    setFormData({
-      ...formData,
-      [field]: input,
-    })
-  };
+  //   setFormData({
+  //     ...formData,
+  //     [field]: input,
+  //   })
+  // };
 
   const handlePhone = ({ target }) => {
-    setClientErrors({});
-    const phoneError = {};
+    setClientErrors(null);
     const input = target.value;
     const phoneRegex = new RegExp(/^\(?\s*[1-9][0-9]{2}\s*\)?\s*\-?\s*[0-9]{3}\s*\-?\s*[0-9]{4}$/);
     if(phoneRegex.test(input.trim())) {
@@ -176,22 +176,18 @@ function ReservationForm({isNew = true}) {
         'mobile_number': input,
       });
     }
-    else {
-      phoneError["mobile"] = "Invalid mobile number format";
-      setClientErrors(phoneError);
-    }
+    else setMessage("Invalid mobile number format");
   };
 
   async function handleSubmit(event) {
     event.preventDefault();
     serverError = {};
-    setClientErrors({});
     if(!(formData['reservation_date'] && formData['reservation_time'])) {
-      setClientErrors({'missing': "One or both of 'reservation_date' and 'reservation_time' missing."});
+      setMessage("One or both of 'reservation_date' and 'reservation_time' missing.");
       return;
     }
     if(formData['people'] < 1 || formData['people'] % 1) {
-      setClientErrors({'people': "People field must be a strictly positive integer."});
+      setMessage("People field must be a strictly positive integer.");
       return;
     }
     const CURRENT_TIME = new Date();
@@ -217,8 +213,7 @@ function ReservationForm({isNew = true}) {
 
     const abortController = new AbortController();
     if(isNew) {
-      const statusObj = { data: { status: "booked" } };
-      const createdRecord = await postReservation(submitForm,
+      await postReservation(submitForm, // sets status=='booked' within controller create() method
         abortController.signal)
         .then((res) => {
           if(res.status === 500) {
@@ -237,12 +232,6 @@ function ReservationForm({isNew = true}) {
             return res.json();
           }
         });
-      if(createdRecord){
-        const createdId = createdRecord['data']['reservation_id'];
-        await updateStatus(createdId, statusObj, abortController.signal)
-          .then((res) => res.json())
-          .catch(setReservationErrors);
-      }
     }
     else {
       submitForm['reservation_id'] = parseInt(reservation_id);
@@ -301,10 +290,6 @@ function ReservationForm({isNew = true}) {
           onChange={handlePhone}
           value={formData['mobile_number']}
         />
-        <div className="alert alert-danger" hidden={!('mobile' in
-          clientErrors)}>
-          {clientErrors['mobile']}
-        </div>
       </label>
       <br/>
       <label htmlFor="reservation_date">
@@ -314,7 +299,7 @@ function ReservationForm({isNew = true}) {
           type="date"
           name="reservation_date"
           required
-          onChange={handleTime}
+          onChange={handleChange}
           value={formData['reservation_date']}
         />
       </label>
@@ -326,13 +311,9 @@ function ReservationForm({isNew = true}) {
           type="time"
           name="reservation_time"
           required
-          onChange={handleTime}
+          onChange={handleChange}
           value={formData['reservation_time']}
         />
-        <div className="alert alert-danger"
-          hidden={!('time' in clientErrors || 'Tuesday' in clientErrors)}>
-            {clientErrors['time'] || clientErrors['Tuesday']}
-        </div>
       </label>
       <br/>
       <label htmlFor="people">
@@ -345,16 +326,11 @@ function ReservationForm({isNew = true}) {
           onChange={handleChange}
           value={formData['people']}
         />
-        <div className="alert alert-danger" hidden={!clientErrors['missing']}>
-            {clientErrors['missing']}
-        </div>
-        <div className="alert alert-danger" hidden={!clientErrors['people']}>
-            {clientErrors['people']}
-        </div>
       </label>
       <br/>
+      <ErrorAlert error={clientErrors || reservationErrors}/>
       <button type="submit" disabled={!(formData['first_name'].length &&
-        formData['last_name'].length && formData['people'])}
+        formData['last_name'].length && formData['people']) || clientErrors}
         onClick={handleSubmit}>Submit</button>
       <button onClick={(event) => {
         event.preventDefault();

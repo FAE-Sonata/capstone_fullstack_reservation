@@ -59,6 +59,7 @@ function DashboardReservations({arrReservations, reservationsError,
                 <td>
                   <button data-reservation-id-cancel={reservation_id}
                     data-status={status}
+                    type="button" className="btn btn-danger"
                     hidden={['finished', 'cancelled'].find(x => x===status)}
                     onClick={cancelReservation}>
                       Cancel

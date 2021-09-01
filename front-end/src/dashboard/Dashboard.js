@@ -58,7 +58,7 @@ function Dashboard({ date }) {
         <td data-table-id-status={table_id}>{(reservation_id) ? "Occupied" :
           "Free" } </td>
         <td>
-          <button data-table-id-finish={table_id} onClick={handleUnseat}
+          <button data-table-id-finish={table_id} type="button" className="btn btn-danger" onClick={handleUnseat}
             hidden={!reservation_id &&
             reservation_id !== 0} id={reservation_id}>
             Finish

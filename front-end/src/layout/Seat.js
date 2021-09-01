@@ -116,8 +116,8 @@ function Seat() {
         </select>
       <ErrorAlert error={serverErrors} />
       <ErrorAlert error={formErrors}/>
-      <button type="submit" onClick={handleSubmit}>Submit</button>
-      <button onClick={(event) => {
+      <button type="submit" className="btn btn-primary" onClick={handleSubmit}>Submit</button>
+      <button type="button" className="btn btn-danger" onClick={(event) => {
         history.goBack();}}>Cancel</button>
       {/* <p hidden={hasAvailable}>No tables matching party size of {
         reservationSize} available. Press "Cancel" to go back.</p> */}

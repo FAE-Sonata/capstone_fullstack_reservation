@@ -54,12 +54,8 @@ function PhoneSearch() {
         </label>
         <button type="submit" disabled={!searchTerm.length}
           onClick={handleSubmit}>Find</button>
-        {/* <button onClick={() => history.goBack()}>Cancel</button> */}
         <br/>
         <ErrorAlert error={inputError}/>
-        {/* <div className="alert alert-danger" hidden={!inputError.length}>
-          {inputError}
-        </div> */}
         <br/>
         {(clickedFind) ? (<DashboardReservations arrReservations={reservations}
           reservationsError={reservationsError}
