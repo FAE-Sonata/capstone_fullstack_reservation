@@ -103,7 +103,7 @@ function Seat() {
         .then((res) => res.json())
         .catch(setServerErrors);
       history.push(`../../dashboard?date=${reservationDate}`);
-      window.location.reload();
+      // window.location.reload();
       return;
     }
   };
