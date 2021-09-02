@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { useHistory } from "react-router";
 import { listReservations, listTables, unseatTable } from "../utils/api";
 import ErrorAlert from "../layout/ErrorAlert";
-import {previous, next} from "../utils/date-time";
+import {previous, next, today} from "../utils/date-time";
 import DashboardReservations from "./DashboardReservations";
 
 /**
@@ -15,6 +16,7 @@ function Dashboard({ date }) {
   const [reservationsError, setReservationsError] = useState(null);
   const [tables, setTables] = useState([]);
   const [tablesError, setTablesError] = useState(null);
+  const history = useHistory();
 
   useEffect(loadDashboard, [date]);
 
@@ -46,6 +48,18 @@ function Dashboard({ date }) {
     }
   };
 
+  function handlePrev(event) {
+    history.push(`?date=${previous(date)}`);
+  }
+
+  function handleNext(event) {
+    history.push(`?date=${next(date)}`);
+  }
+
+  function handleToday(event) {
+    history.push(`?date=${today()}`);
+  }
+
   let tablesTable = undefined;
   if(tables.length) {
     tables.sort((x,y) => (x['table_name'] > y['table_name']) ? 1 : -1);
@@ -73,9 +87,14 @@ function Dashboard({ date }) {
     <main>
       <h1>Dashboard</h1>
       <div className="d-md-flex mb-3">
-        <p><a href={`?date=${previous(date)}`}>[Previous date]</a></p><br/>
+        <p>
+          <button type="button" onClick={handlePrev}>Previous date</button>
+        </p><br/>
         <h4 className="mb-0">{`Reservations for the date of ${date}`}</h4><br/>
-        <p><a href={`?date=${next(date)}`}>[Next date]</a></p><br/>
+        <p><button type="button" onClick={handleNext}>Next date</button></p><br/>
+        <p>
+          <button type="button" onClick={handleToday}>Jump to today</button>
+        </p>
       </div>
       <DashboardReservations arrReservations={reservations}
         reservationsError={reservationsError}/>

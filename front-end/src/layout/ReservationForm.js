@@ -169,7 +169,7 @@ function ReservationForm({isNew = true}) {
   const handlePhone = ({ target }) => {
     setClientErrors(null);
     const input = target.value;
-    const phoneRegex = new RegExp(/^\(?\s*[1-9][0-9]{2}\s*\)?\s*\-?\s*[0-9]{3}\s*\-?\s*[0-9]{4}$/);
+    const phoneRegex = new RegExp(/^\(?\s*[1-9][0-9]{2}\s*\)?\s*-?\s*[0-9]{3}\s*-?\s*[0-9]{4}$/);
     if(phoneRegex.test(input.trim())) {
       setFormData({
         ...formData,
@@ -198,7 +198,7 @@ function ReservationForm({isNew = true}) {
     let mid = formData;
     const ymd = formData['reservation_date'];
     // delete submitForm['errors'];
-    const teleRe = new RegExp(/[\-()\s]/g);
+    const teleRe = new RegExp(/[-()\s]/g);
     const rawTele = mid['mobile_number'].replaceAll(teleRe, "");
     // using mid so formData is NOT modified in-place for these 2 fields
     mid['mobile_number'] = [rawTele.substr(0,3),

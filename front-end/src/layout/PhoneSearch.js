@@ -20,7 +20,7 @@ function PhoneSearch() {
   const handlePhone = ({ target }) => {
     setInputError(null);
     const input = target.value.trim();
-    const phoneRegex = new RegExp(/^\(?\s*\d{0,3}\s*\)?\s*\-?\s*\d{0,3}\s*\-?\s*\d{0,4}$/);
+    const phoneRegex = new RegExp(/^\(?\s*\d{0,3}\s*\)?\s*-?\s*\d{0,3}\s*-?\s*\d{0,4}$/);
     if(phoneRegex.test(input)) setSearchTerm(input);
     else setMessage("Invalid mobile number format");
   };
