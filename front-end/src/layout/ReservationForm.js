@@ -53,48 +53,48 @@ function ReservationForm({isNew = true}) {
       padInt(DEFAULT_FORM_TIME.getMinutes())].join(":")
   };
   const [formData, setFormData] = useState({ ...initialFormState });
-
-  async function loadReservation() {
-    if(!isNew && (reservation_id || reservation_id === 0)) {
-      const TIME_AT_LOAD = new Date();
-      const abortController = new AbortController();
-      const updateFields = (reservation) => {
-        let populatedForm = {
-          first_name: reservation['first_name'],
-          last_name: reservation['last_name'],
-          mobile_number: reservation['mobile_number'],
-          people: reservation['people'],
-        };
-        const existingTime = new Date(
-          `${reservation['reservation_date']} ` +
-          `${reservation['reservation_time']}`);
-        if(existingTime > TIME_AT_LOAD) {
-          // const {reservation_date, reservation_time, ...other} = formData;
-          populatedForm['reservation_date'] = reservation['reservation_date'];
-          populatedForm['reservation_time'] = reservation['reservation_time'];
-          setFormData({...populatedForm});
+  useEffect(() => {
+    async function loadReservation() {
+      if(!isNew && (reservation_id || reservation_id === 0)) {
+        const TIME_AT_LOAD = new Date();
+        const abortController = new AbortController();
+        const updateFields = (reservation) => {
+          let populatedForm = {
+            first_name: reservation['first_name'],
+            last_name: reservation['last_name'],
+            mobile_number: reservation['mobile_number'],
+            people: reservation['people'],
+          };
+          const existingTime = new Date(
+            `${reservation['reservation_date']} ` +
+            `${reservation['reservation_time']}`);
+          if(existingTime > TIME_AT_LOAD) {
+            // const {reservation_date, reservation_time, ...other} = formData;
+            populatedForm['reservation_date'] = reservation['reservation_date'];
+            populatedForm['reservation_time'] = reservation['reservation_time'];
+            setFormData({...populatedForm});
+          }
+          else {
+            populatedForm['reservation_date'] = formData['reservation_date'];
+            populatedForm['reservation_time'] = formData['reservation_time'];
+            setFormData({...populatedForm});
+          }
         }
-        else {
-          populatedForm['reservation_date'] = formData['reservation_date'];
-          populatedForm['reservation_time'] = formData['reservation_time'];
-          setFormData({...populatedForm});
+        try {
+          const reservationResponse = await readReservation(reservation_id,
+            abortController.signal);
+          if(Object.keys(reservationResponse).length > 0)
+            updateFields(reservationResponse);
         }
+        catch(error) {
+          setReservationErrors(error);
+        }
+        return () => abortController.abort();
       }
-      try {
-        const reservationResponse = await readReservation(reservation_id,
-          abortController.signal);
-        if(Object.keys(reservationResponse).length > 0)
-          updateFields(reservationResponse);
-      }
-      catch(error) {
-        setReservationErrors(error);
-      }
-      return () => abortController.abort();
+      return undefined;
     }
-    return undefined;
-  }
-
-  useEffect(loadReservation, [isNew, reservation_id]);
+    loadReservation();
+  }, [isNew, reservation_id]);
 
   const setMessage = (message) => {
     setClientErrors({message});
