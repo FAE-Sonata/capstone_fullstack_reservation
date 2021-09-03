@@ -4,19 +4,11 @@ import { useHistory, useParams } from "react-router";
 import { RANGE_TIMES,
   getOpenOn,
   getCloseOn,
-  getFirstTopHour } from "../utils/additional-time-functions";
+  defaultDateTimeFormatted} from "../utils/additional-time-functions";
 import { postReservation, readReservation, updateReservation } from "../utils/api";
 import ErrorAlert from "./ErrorAlert";
 let serverError = {};
-
-/**
- * 
- * @param {Number} x 
- * @returns "0X" if "X" is a single digit
- */
-function padInt(x) {
-  return x.toString().padStart(2, "0");
-}
+const DEFAULT_DATETIME = defaultDateTimeFormatted();
 
 function timeToStr(timeObj) {
   const ymd = [timeObj.getFullYear(),
@@ -31,26 +23,21 @@ function constructDateObj(date, time) {
   const timeSplit = time.split(":");
   return new Date(parseInt(dateSplit[0]), parseInt(dateSplit[1])-1,
     parseInt(dateSplit[2]), parseInt(timeSplit[0]), parseInt(timeSplit[1]));
-  // return new Date(`${date}T${time}`);
+  // alternate parsing option: return new Date(`${date}T${time}`);
 }
 
 function ReservationForm({isNew = true}) {
-  // const { urmUrl } = useRouteMatch();
   const history = useHistory();
   const { reservation_id } = useParams();
   const [clientErrors, setClientErrors] = useState(null);
   const [reservationErrors, setReservationErrors] = useState(null);
-  let DEFAULT_FORM_TIME = getFirstTopHour();
 
   const initialFormState = {
     first_name: "", last_name: "",
     mobile_number: "(123) 456-7890",
     people: 1,
-    reservation_date: [DEFAULT_FORM_TIME.getFullYear(),
-      padInt(DEFAULT_FORM_TIME.getMonth()+1),
-      padInt(DEFAULT_FORM_TIME.getDate())].join("-"),
-    reservation_time: [padInt(DEFAULT_FORM_TIME.getHours()),
-      padInt(DEFAULT_FORM_TIME.getMinutes())].join(":")
+    reservation_date: DEFAULT_DATETIME['date'],
+    reservation_time: DEFAULT_DATETIME['time']
   };
   const [fields, setFields] = useState({ ...initialFormState });
   useEffect(() => {
@@ -135,39 +122,6 @@ function ReservationForm({isNew = true}) {
     return true;
   }
 
-  // const handleTime = ({ target }) => {
-  //   setClientErrors(null);
-  //   const field = target.name;
-  //   const input = target.value;
-
-  //   const CURRENT_TIME = new Date();
-  //   let builtTime = undefined;
-  //   switch(field) {
-  //     case "reservation_date":
-  //       if(!input /*|| input.charAt(0) === "0"*/) {
-  //         console.log("INPUT WAS: ", input);
-  //         setMessage("Invalid date format, and/or year cannot lead with 0");
-  //         return;
-  //       }
-  //       builtTime = constructDateObj(input, formData['reservation_time']);
-  //       // builtTime = new Date([input, formData['reservation_time']].join(" "));
-  //       break;
-  //     case "reservation_time":
-  //       builtTime = constructDateObj(formData['reservation_date'], input);
-  //       // builtTime = new Date([formData['reservation_date'], input].join(" "));
-  //       break;
-  //     default:
-  //       setMessage("Invalid time field");
-  //       return;
-  //   }
-  //   if(!isValidTime(CURRENT_TIME, builtTime)) return;
-    
-  //   setFormData({
-  //     ...formData,
-  //     [field]: input,
-  //   })
-  // };
-
   const handlePhone = ({ target }) => {
     setClientErrors(null);
     const input = target.value;
@@ -202,7 +156,7 @@ function ReservationForm({isNew = true}) {
     // delete submitForm['errors'];
     const teleRe = new RegExp(/[-()\s]/g);
     const rawTele = mid['mobile_number'].replaceAll(teleRe, "");
-    // using mid so formData is NOT modified in-place for these 2 fields
+    // using mid so "field" is NOT modified in-place for these 2 fields
     mid['mobile_number'] = [rawTele.substr(0,3),
       rawTele.substr(3,3),
       rawTele.substr(6,4)].join("-");
@@ -331,7 +285,8 @@ function ReservationForm({isNew = true}) {
       </label>
       <br/>
       <ErrorAlert error={clientErrors || reservationErrors}/>
-      <button type="submit" disabled={!(fields['first_name'].length &&
+      <button type="submit" disabled={!('first_name' in fields &&
+        'last_name' in fields && fields['first_name'].length &&
         fields['last_name'].length && fields['people']) || clientErrors}
         onClick={handleSubmit}>Submit</button>
       <button onClick={(event) => {

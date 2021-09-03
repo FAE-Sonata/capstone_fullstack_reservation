@@ -81,3 +81,23 @@ export function getFirstTopHour() {
         return getCloseOn(CURRENT_TIME);
     }
 }
+
+/**
+ * 
+ * @param {Number} x 
+ * @returns "0X" if "X" is a single digit
+ */
+ function padInt(x) {
+    return x.toString().padStart(2, "0");
+  }
+
+export function defaultDateTimeFormatted() {
+    const DEFAULT_FORM_TIME = getFirstTopHour();
+    return {
+        date: [DEFAULT_FORM_TIME.getFullYear(),
+        padInt(DEFAULT_FORM_TIME.getMonth()+1),
+        padInt(DEFAULT_FORM_TIME.getDate())].join("-"),
+        time: [padInt(DEFAULT_FORM_TIME.getHours()),
+            padInt(DEFAULT_FORM_TIME.getMinutes())].join(":")
+    };
+}
