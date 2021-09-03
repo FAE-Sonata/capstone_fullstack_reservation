@@ -52,7 +52,7 @@ function ReservationForm({isNew = true}) {
     reservation_time: [padInt(DEFAULT_FORM_TIME.getHours()),
       padInt(DEFAULT_FORM_TIME.getMinutes())].join(":")
   };
-  const [formData, setFormData] = useState({ ...initialFormState });
+  const [fields, setFields] = useState({ ...initialFormState });
   useEffect(() => {
     async function loadReservation() {
       if(!isNew && (reservation_id || reservation_id === 0)) {
@@ -72,12 +72,12 @@ function ReservationForm({isNew = true}) {
             // const {reservation_date, reservation_time, ...other} = formData;
             populatedForm['reservation_date'] = reservation['reservation_date'];
             populatedForm['reservation_time'] = reservation['reservation_time'];
-            setFormData({...populatedForm});
+            setFields({...populatedForm});
           }
           else {
-            populatedForm['reservation_date'] = formData['reservation_date'];
-            populatedForm['reservation_time'] = formData['reservation_time'];
-            setFormData({...populatedForm});
+            populatedForm['reservation_date'] = fields['reservation_date'];
+            populatedForm['reservation_time'] = fields['reservation_time'];
+            setFields({...populatedForm});
           }
         }
         try {
@@ -94,6 +94,8 @@ function ReservationForm({isNew = true}) {
       return undefined;
     }
     loadReservation();
+    // adding "fields" to the dependency [] will induce infinite network requests
+    // eslint-disable-next-line
   }, [isNew, reservation_id]);
 
   const setMessage = (message) => {
@@ -102,8 +104,8 @@ function ReservationForm({isNew = true}) {
   
   const handleChange = ({ target }) => {
     setClientErrors(null);
-    setFormData({
-      ...formData,
+    setFields({
+      ...fields,
       [target.name]: target.value,
     });
   };
@@ -171,8 +173,8 @@ function ReservationForm({isNew = true}) {
     const input = target.value;
     const phoneRegex = new RegExp(/^\(?\s*[1-9][0-9]{2}\s*\)?\s*-?\s*[0-9]{3}\s*-?\s*[0-9]{4}$/);
     if(phoneRegex.test(input.trim())) {
-      setFormData({
-        ...formData,
+      setFields({
+        ...fields,
         'mobile_number': input,
       });
     }
@@ -182,21 +184,21 @@ function ReservationForm({isNew = true}) {
   async function handleSubmit(event) {
     event.preventDefault();
     serverError = {};
-    if(!(formData['reservation_date'] && formData['reservation_time'])) {
+    if(!(fields['reservation_date'] && fields['reservation_time'])) {
       setMessage("One or both of 'reservation_date' and 'reservation_time' missing.");
       return;
     }
-    if(formData['people'] < 1 || formData['people'] % 1) {
+    if(fields['people'] < 1 || fields['people'] % 1) {
       setMessage("People field must be a strictly positive integer.");
       return;
     }
     const CURRENT_TIME = new Date();
-    if(!isValidTime(CURRENT_TIME, constructDateObj(formData['reservation_date'],
-      formData['reservation_time'])))
+    if(!isValidTime(CURRENT_TIME, constructDateObj(fields['reservation_date'],
+      fields['reservation_time'])))
       return;
 
-    let mid = formData;
-    const ymd = formData['reservation_date'];
+    let mid = fields;
+    const ymd = fields['reservation_date'];
     // delete submitForm['errors'];
     const teleRe = new RegExp(/[-()\s]/g);
     const rawTele = mid['mobile_number'].replaceAll(teleRe, "");
@@ -267,7 +269,7 @@ function ReservationForm({isNew = true}) {
           type="text"
           name="first_name"
           onChange={handleChange}
-          value={formData['first_name']}
+          value={fields['first_name']}
         />
       </label>
       <label htmlFor="last_name">
@@ -277,7 +279,7 @@ function ReservationForm({isNew = true}) {
           type="text"
           name="last_name"
           onChange={handleChange}
-          value={formData['last_name']}
+          value={fields['last_name']}
         />
       </label>
       <br />
@@ -288,7 +290,7 @@ function ReservationForm({isNew = true}) {
           type="text"
           name="mobile_number"
           onChange={handlePhone}
-          value={formData['mobile_number']}
+          value={fields['mobile_number']}
         />
       </label>
       <br/>
@@ -300,7 +302,7 @@ function ReservationForm({isNew = true}) {
           name="reservation_date"
           required
           onChange={handleChange}
-          value={formData['reservation_date']}
+          value={fields['reservation_date']}
         />
       </label>
       <br/>
@@ -312,7 +314,7 @@ function ReservationForm({isNew = true}) {
           name="reservation_time"
           required
           onChange={handleChange}
-          value={formData['reservation_time']}
+          value={fields['reservation_time']}
         />
       </label>
       <br/>
@@ -324,13 +326,13 @@ function ReservationForm({isNew = true}) {
           name="people"
           min="1"
           onChange={handleChange}
-          value={formData['people']}
+          value={fields['people']}
         />
       </label>
       <br/>
       <ErrorAlert error={clientErrors || reservationErrors}/>
-      <button type="submit" disabled={!(formData['first_name'].length &&
-        formData['last_name'].length && formData['people']) || clientErrors}
+      <button type="submit" disabled={!(fields['first_name'].length &&
+        fields['last_name'].length && fields['people']) || clientErrors}
         onClick={handleSubmit}>Submit</button>
       <button onClick={(event) => {
         event.preventDefault();
